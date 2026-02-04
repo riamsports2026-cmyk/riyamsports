@@ -2,6 +2,7 @@ import { getAllUsers } from '@/lib/actions/admin/users';
 import { getAllRoles } from '@/lib/actions/admin/roles';
 import { getAllLocations } from '@/lib/actions/admin/locations';
 import { getUserRolesWithLocations } from '@/lib/actions/admin/user-roles';
+import Link from 'next/link';
 import { UserRoleForm } from '@/components/admin/user-role-form';
 import { CreateUserForm } from '@/components/admin/create-user-form';
 import { UserDateFilters } from '@/components/user-date-filters';
@@ -18,6 +19,7 @@ export default async function AdminUsersPage({
     end_date?: string;
     sort_by?: string;
     sort_order?: 'asc' | 'desc';
+    role?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -29,6 +31,7 @@ export default async function AdminUsersPage({
     endDate: params.end_date,
     sortBy: params.sort_by || 'created_at',
     sortOrder: (params.sort_order as 'asc' | 'desc') || 'desc',
+    role: params.role,
   };
   
   const [usersResult, rolesResult, locationsResult] = await Promise.all([
@@ -52,13 +55,8 @@ export default async function AdminUsersPage({
     })
   );
 
-  // Filter out customers (users who only have 'customer' role)
-  const nonCustomerUsers = users.filter((user) => {
-    const hasOnlyCustomerRole = user.roles.length === 1 && user.roles[0] === 'customer';
-    return !hasOnlyCustomerRole;
-  });
-
-  // Filter out 'customer' role from roles list for assignment
+  // Show all users (including customers) so Total Users count matches the list
+  // Filter out 'customer' role from roles list for assignment dropdown
   const nonCustomerRoles = roles.filter((role) => role.name !== 'customer');
 
   return (
@@ -68,7 +66,7 @@ export default async function AdminUsersPage({
           <h2 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-[#1E3A5F] to-[#FF6B35] bg-clip-text text-transparent">
             👥 Users & Roles
           </h2>
-          <p className="mt-2 text-sm sm:text-base text-[#1E3A5F] font-medium">Manage users and assign roles (customers excluded)</p>
+          <p className="mt-2 text-sm sm:text-base text-[#1E3A5F] font-medium">All users — click a user to view details or assign roles</p>
         </div>
         <div className="shrink-0">
           <CreateUserForm roles={nonCustomerRoles} locations={locations} />
@@ -80,16 +78,16 @@ export default async function AdminUsersPage({
           <Loader size="md" label="Loading filters..." />
         </div>
       }>
-        <UserDateFilters />
+        <UserDateFilters roles={roles.filter((r: { name: string }) => r.name !== 'admin')} />
       </Suspense>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-[#1E3A5F]/10 mt-6">
         <ul className="divide-y divide-gray-200">
-          {nonCustomerUsers.map((user) => (
+          {users.map((user) => (
             <li key={user.id} className="hover:bg-[#FF6B35]/5 transition-colors">
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-center">
+                  <Link href={`/admin/users/${user.id}`} className="flex items-center min-w-0 flex-1 group">
                     <div className="shrink-0">
                       {user.profile?.profile_image ? (
                         <img
@@ -106,15 +104,18 @@ export default async function AdminUsersPage({
                       )}
                     </div>
                     <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                      <div className="text-base sm:text-lg font-bold text-[#1E3A5F] truncate">
+                      <div className="text-base sm:text-lg font-bold text-[#1E3A5F] truncate group-hover:text-[#FF6B35] transition-colors">
                         {user.profile?.full_name || user.email}
                       </div>
                       <div className="text-sm text-gray-600 truncate">{user.email}</div>
                       {user.profile?.mobile_number && (
                         <div className="text-sm text-gray-600">📱 {user.profile.mobile_number}</div>
                       )}
+                      <span className="text-xs text-[#FF6B35] font-medium mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        View details →
+                      </span>
                     </div>
-                  </div>
+                  </Link>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
                     <div className="flex flex-wrap gap-2 min-w-0">
                       {user.roles
@@ -154,9 +155,10 @@ export default async function AdminUsersPage({
             </li>
           ))}
         </ul>
-        {nonCustomerUsers.length === 0 && (
+        {users.length === 0 && (
           <div className="text-center py-12 bg-linear-to-br from-[#FF6B35]/5 to-[#1E3A5F]/5">
-            <p className="text-sm sm:text-base text-[#1E3A5F] font-medium">No staff or admin users found</p>
+            <p className="text-sm sm:text-base text-[#1E3A5F] font-medium">No users found</p>
+            <p className="text-sm text-gray-600 mt-1">Users will appear here once they sign up.</p>
           </div>
         )}
         {totalPages > 1 && (

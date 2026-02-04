@@ -4,46 +4,82 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { DatePickerInput } from '@/components/ui/date-picker';
 
-export function UserDateFilters() {
+type Role = { id: string; name: string };
+
+export function UserDateFilters({ roles = [] }: { roles?: Role[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [role, setRole] = useState('');
 
   // Initialize from URL params
   useEffect(() => {
     setStartDate(searchParams.get('start_date') || '');
     setEndDate(searchParams.get('end_date') || '');
+    setRole(searchParams.get('role') || '');
   }, [searchParams]);
 
-  const handleFilter = () => {
+  const buildParams = () => {
     const params = new URLSearchParams();
+    const sortBy = searchParams.get('sort_by');
+    const sortOrder = searchParams.get('sort_order');
+    if (sortBy) params.set('sort_by', sortBy);
+    if (sortOrder) params.set('sort_order', sortOrder);
     let s = startDate;
     let e = endDate;
-    // Normalize: if both set and start > end, swap so range is valid (past–future or future–future)
     if (s && e && s > e) {
       [s, e] = [e, s];
     }
     if (s) params.set('start_date', s);
     if (e) params.set('end_date', e);
-    params.delete('page'); // Reset to page 1 when filtering
-    router.push(`${pathname}?${params.toString()}`);
+    if (role) params.set('role', role);
+    params.delete('page');
+    return params;
+  };
+
+  const handleFilter = () => {
+    router.push(`${pathname}?${buildParams().toString()}`);
   };
 
   const handleClear = () => {
     setStartDate('');
     setEndDate('');
-    router.push(pathname);
+    setRole('');
+    const params = new URLSearchParams();
+    const sortBy = searchParams.get('sort_by');
+    const sortOrder = searchParams.get('sort_order');
+    if (sortBy) params.set('sort_by', sortBy);
+    if (sortOrder) params.set('sort_order', sortOrder);
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   return (
     <div className="mb-6 bg-white p-4 sm:p-6 rounded-xl shadow-lg border-2 border-[#1E3A5F]/10">
       <h3 className="text-base sm:text-lg font-bold text-[#1E3A5F] mb-4 flex items-center">
-        <span className="mr-2">🔍</span> Filter Users by Registration Date
+        <span className="mr-2">🔍</span> Filter Users
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label htmlFor="role" className="block text-xs font-semibold text-[#1E3A5F] mb-1.5">
+            Role
+          </label>
+          <select
+            id="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full px-3 py-2.5 border-2 border-[#1E3A5F]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium bg-white"
+          >
+            <option value="">All roles</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.name}>
+                {r.name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label htmlFor="start_date" className="block text-xs font-semibold text-[#1E3A5F] mb-1.5">
             Start Date

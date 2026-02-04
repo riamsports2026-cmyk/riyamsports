@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { isAdminOrSubAdmin } from '@/lib/utils/roles';
 import { getAllBookings } from '@/lib/actions/admin/bookings';
-import { getAllUsers } from '@/lib/actions/admin/users';
+import { getTotalUsersCount } from '@/lib/actions/admin/users';
 import { BookingFilters } from '@/components/booking-filters';
 import { Loader } from '@/components/ui/loader';
 import Link from 'next/link';
@@ -36,17 +36,16 @@ export default async function AdminDashboard({
     limit: 10000, // Get all for stats
   };
 
-  // Get all bookings and users for dashboard stats (with date filters if provided)
-  const [bookingsResult, usersResult] = await Promise.all([
+  // Get all bookings and total users count (single count query, no list fetch)
+  const [bookingsResult, totalUsersCount] = await Promise.all([
     getAllBookings(filters),
-    getAllUsers(1, 10000), // Users don't need date filtering
+    getTotalUsersCount(),
   ]);
 
   const bookings = bookingsResult.data;
-  const users = usersResult.data;
 
   const stats = {
-    totalUsers: users.length,
+    totalUsers: totalUsersCount,
     totalBookings: bookings.length,
     pendingBookings: bookings.filter((b: any) => b.booking_status === 'pending_payment').length,
     confirmedBookings: bookings.filter((b: any) => b.booking_status === 'confirmed').length,
@@ -75,19 +74,22 @@ export default async function AdminDashboard({
       </Suspense>
 
       <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#1E3A5F]/10 overflow-hidden transform hover:scale-105">
-          <div className="bg-linear-to-br from-[#1E3A5F] to-[#2D4F7C] p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-white/90 text-sm font-semibold">Total Users</div>
-              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+        <Link href="/admin/users" className="block">
+          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#1E3A5F]/10 overflow-hidden transform hover:scale-105 cursor-pointer">
+            <div className="bg-linear-to-br from-[#1E3A5F] to-[#2D4F7C] p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-white/90 text-sm font-semibold">Total Users</div>
+                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="text-2xl sm:text-3xl font-bold text-[#1E3A5F]">{stats.totalUsers}</div>
+              <p className="text-xs text-gray-500 mt-1">Click to view users</p>
             </div>
           </div>
-          <div className="p-5">
-            <div className="text-2xl sm:text-3xl font-bold text-[#1E3A5F]">{stats.totalUsers}</div>
-          </div>
-        </div>
+        </Link>
 
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#1E3A5F]/10 overflow-hidden transform hover:scale-105">
           <div className="bg-linear-to-br from-[#FF6B35] to-[#FF8C61] p-4">

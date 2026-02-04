@@ -56,9 +56,9 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- It's safer to use the Dashboard or Admin API
 UPDATE auth.users
 SET 
-  encrypted_password = crypt('NewPassword123!', gen_salt('bf')),
+  encrypted_password = crypt('Riyam@2026', gen_salt('bf')),
   updated_at = NOW()
-WHERE id = 'YOUR_USER_ID_HERE';
+WHERE id = '4ce2b33c-724c-4a49-8422-45e55a7dafc2';
 
 -- ============================================
 -- ALTERNATIVE: Create a new admin user if needed

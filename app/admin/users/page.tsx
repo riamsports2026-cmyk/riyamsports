@@ -69,7 +69,7 @@ export default async function AdminUsersPage({
           <p className="mt-2 text-sm sm:text-base text-[#1E3A5F] font-medium">All users — click a user to view details or assign roles</p>
         </div>
         <div className="shrink-0">
-          <CreateUserForm roles={nonCustomerRoles} locations={locations} />
+          <CreateUserForm roles={assignableRoles} locations={locations} />
         </div>
       </div>
 

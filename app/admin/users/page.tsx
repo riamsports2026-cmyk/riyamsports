@@ -56,8 +56,8 @@ export default async function AdminUsersPage({
   );
 
   // Show all users (including customers) so Total Users count matches the list
-  // Filter out 'customer' role from roles list for assignment dropdown
-  const nonCustomerRoles = roles.filter((role) => role.name !== 'customer');
+  // Filter out customer and admin from assignment dropdown (admin is secret)
+  const assignableRoles = roles.filter((r: { name: string }) => r.name !== 'customer' && r.name !== 'admin');
 
   return (
     <div className="px-4 py-4 sm:py-6">
@@ -145,7 +145,7 @@ export default async function AdminUsersPage({
                     <UserRoleForm 
                       userId={user.id} 
                       currentRoles={user.roles} 
-                      allRoles={nonCustomerRoles}
+                      allRoles={assignableRoles}
                       locations={locations}
                       userRoleDetails={userRoleDetails.get(user.id)}
                     />

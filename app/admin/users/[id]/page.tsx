@@ -25,7 +25,8 @@ export default async function UserDetailPage({
 
   const roles = Array.isArray(rolesResult) ? rolesResult : rolesResult.data || [];
   const locations = locationsResult.data || [];
-  const nonCustomerRoles = roles.filter((r: { name: string }) => r.name !== 'customer');
+  // Exclude customer and admin from assignment (admin is secret)
+  const assignableRoles = roles.filter((r: { name: string }) => r.name !== 'customer' && r.name !== 'admin');
   const userRoleDetails = await getUserRolesWithLocations(id);
 
   return (
@@ -151,7 +152,7 @@ export default async function UserDetailPage({
             <UserRoleForm
               userId={user.id}
               currentRoles={user.roles}
-              allRoles={nonCustomerRoles}
+              allRoles={assignableRoles}
               locations={locations}
               userRoleDetails={userRoleDetails}
             />

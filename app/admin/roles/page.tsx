@@ -42,12 +42,14 @@ export default async function AdminRolesPage({
   
   const users = Array.isArray(usersResult) ? usersResult : usersResult.data || [];
   const roles = rolesResult.data;
+  // Hide admin from lists — keep it secret
+  const rolesWithoutAdmin = roles.filter((r: { name: string }) => r.name !== 'admin');
   const locations = locationsResult.data || [];
   const roleLocationsList = Array.isArray(roleLocations) ? roleLocations : [];
 
   const rolePermissionsMap = new Map<string, string[]>();
   await Promise.all(
-    roles.map(async (role) => {
+    roles.map(async (role: { id: string }) => {
       const permissionIds = await getRolePermissions(role.id);
       rolePermissionsMap.set(role.id, permissionIds);
     })
@@ -70,7 +72,7 @@ export default async function AdminRolesPage({
             email: u.email ?? '',
             profile: u.profile ? { full_name: u.profile.full_name ?? null } : undefined,
           }))}
-          roles={roles}
+          roles={rolesWithoutAdmin}
           locations={locations}
         />
       </div>
@@ -92,7 +94,7 @@ export default async function AdminRolesPage({
             <RoleForm />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {roles.map((role) => (
+            {rolesWithoutAdmin.map((role: { id: string; name?: string; description?: string | null; is_system_role?: boolean }) => (
               <div key={role.id} className="border rounded-lg p-4 relative">
                 <div className="font-medium text-gray-900 capitalize">
                   {(role.name ?? '').replace(/_/g, ' ')}

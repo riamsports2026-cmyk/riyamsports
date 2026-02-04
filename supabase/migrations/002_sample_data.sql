@@ -4,9 +4,8 @@
 -- Insert sample locations
 INSERT INTO locations (name, address, city, state, pincode, is_active)
 VALUES
-  ('RIAM Sports Center - Main', '123 Sports Avenue', 'Bangalore', 'Karnataka', '560001', true),
-  ('RIAM Sports Center - North', '456 Stadium Road', 'Bangalore', 'Karnataka', '560002', true),
-  ('RIAM Sports Center - South', '789 Ground Street', 'Bangalore', 'Karnataka', '560003', true)
+  ('RIAM Sports Center - Main', '123 Sports Avenue Saibaba Colony', 'Coimbatore', 'Tamilnadu', '560001', true),
+  ('RIAM Sports Center - North', '456 Stadium Road Thudiyalur', 'Coimbatore', 'Karnataka', '560002', true)
 ON CONFLICT DO NOTHING;
 
 -- Insert sample services (sports)

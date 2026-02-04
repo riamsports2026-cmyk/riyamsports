@@ -22,6 +22,12 @@ export async function middleware(request: NextRequest) {
     request: { headers: requestHeaders },
   });
 
+  try {
+    // Skip auth when Supabase env is missing (e.g. build/edge fallback)
+    if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return response;
+    }
+
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -197,6 +203,10 @@ export async function middleware(request: NextRequest) {
   }
 
   return response;
+  } catch (err) {
+    console.error('[middleware]', err);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 }
 
 export const config = {

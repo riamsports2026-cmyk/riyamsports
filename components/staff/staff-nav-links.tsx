@@ -63,9 +63,11 @@ export function StaffNavLinks({
           🎭 Roles
         </Link>
       )}
+      {/* 🔐 Permissions — commented out
       <Link href="/staff/permissions" className={linkClass('/staff/permissions')}>
         🔐 Permissions
       </Link>
+      */}
     </>
   );
 }

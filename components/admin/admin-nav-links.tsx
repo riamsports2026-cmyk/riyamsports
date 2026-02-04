@@ -69,9 +69,11 @@ export function AdminNavLinks({
       <Link href="/admin/payment-gateways" className={linkClass('/admin/payment-gateways')}>
         💳 Payment Gateways
       </Link>
+      {/* 🔧 Debug Staff — commented out
       <Link href="/admin/debug-staff" className={linkClass('/admin/debug-staff')}>
         🔧 Debug Staff
       </Link>
+      */}
     </>
   );
 }

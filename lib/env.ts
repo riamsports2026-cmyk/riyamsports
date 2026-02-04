@@ -41,18 +41,27 @@ const envResult = envSchema.safeParse({
   CRON_SECRET: process.env.CRON_SECRET,
 });
 
-if (!envResult.success) {
-  const missingVars = envResult.error.issues
-    .filter((err) => err.code === 'invalid_type')
-    .map((err) => err.path.join('.'))
-    .join(', ');
+// Don't throw at module load (e.g. during `next build` when env may be missing).
+// Invalid env will surface at runtime when Supabase/auth is used.
+const fallback: z.infer<typeof envSchema> = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  NEXT_PUBLIC_APP_URL: (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000') as string,
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
+  PAYGLOBAL_MERCHANT_ID: process.env.PAYGLOBAL_MERCHANT_ID,
+  PAYGLOBAL_API_KEY: process.env.PAYGLOBAL_API_KEY,
+  PAYGLOBAL_BASE_URL: process.env.PAYGLOBAL_BASE_URL as string | undefined,
+  PAYGLOBAL_WEBHOOK_SECRET: process.env.PAYGLOBAL_WEBHOOK_SECRET,
+  WHATSAPP_PROVIDER: (process.env.WHATSAPP_PROVIDER || 'twilio') as 'twilio' | 'meta',
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+  TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
+  WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
+  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+  CRON_SECRET: process.env.CRON_SECRET,
+};
 
-  throw new Error(
-    `Missing required environment variables: ${missingVars}\n` +
-      'Please create a .env.local file with the required variables.\n' +
-      'See .env.local.example for reference.'
-  );
-}
-
-export const env = envResult.data;
+export const env = envResult.success ? envResult.data : fallback;
 

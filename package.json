@@ -1,0 +1,43 @@
+{
+  "name": "riyam",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:migrate": "node scripts/open-migration.js",
+    "db:setup": "node scripts/open-migration.js",
+    "db:verify": "node scripts/verify-migration.js",
+    "db:sample-data": "node scripts/add-sample-data.js",
+    "db:export": "node scripts/export-database.js",
+    "db:import": "node scripts/import-database.js",
+    "assign-admin": "node scripts/assign-admin-role.js"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.91.0",
+    "@types/react-datepicker": "^6.2.0",
+    "cloudinary": "^2.9.0",
+    "date-fns": "^4.1.0",
+    "next": "16.1.4",
+    "next-cloudinary": "^6.17.5",
+    "razorpay": "^2.9.6",
+    "react": "19.2.3",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "19.2.3",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

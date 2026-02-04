@@ -111,19 +111,19 @@ export async function createLocation(
     return { error: 'Unauthorized' };
   }
 
-  const googleMapsAddress = formData.get('google_maps_address') as string;
-  const city = formData.get('city') as string;
-  const state = formData.get('state') as string;
-  const pincode = formData.get('pincode') as string;
-  
+  const googleMapsAddress = formData.get('google_maps_address');
+  const city = formData.get('city');
+  const state = formData.get('state');
+  const pincode = formData.get('pincode');
+
   const data = {
-    name: formData.get('name') as string,
-    address: formData.get('address') as string,
-    city: city && city.trim() ? city.trim() : undefined,
-    state: state && state.trim() ? state.trim() : undefined,
-    pincode: pincode && pincode.trim() ? pincode.trim() : undefined,
+    name: (formData.get('name') ?? '') as string,
+    address: (formData.get('address') ?? '') as string,
+    city: typeof city === 'string' && city.trim() ? city.trim() : undefined,
+    state: typeof state === 'string' && state.trim() ? state.trim() : undefined,
+    pincode: typeof pincode === 'string' && pincode.trim() ? pincode.trim() : undefined,
     is_active: formData.get('is_active') === 'true',
-    google_maps_address: googleMapsAddress && googleMapsAddress.trim() ? googleMapsAddress.trim() : null,
+    google_maps_address: typeof googleMapsAddress === 'string' && googleMapsAddress.trim() ? googleMapsAddress.trim() : undefined,
   };
 
   try {
@@ -167,20 +167,24 @@ export async function updateLocation(
     return { error: 'Unauthorized' };
   }
 
-  const id = formData.get('id') as string;
-  const googleMapsAddress = formData.get('google_maps_address') as string;
-  const city = formData.get('city') as string;
-  const state = formData.get('state') as string;
-  const pincode = formData.get('pincode') as string;
-  
+  const id = formData.get('id');
+  if (typeof id !== 'string' || !id.trim()) {
+    return { error: 'Location ID is required to update.' };
+  }
+
+  const googleMapsAddress = formData.get('google_maps_address');
+  const city = formData.get('city');
+  const state = formData.get('state');
+  const pincode = formData.get('pincode');
+
   const data = {
-    name: formData.get('name') as string,
-    address: formData.get('address') as string,
-    city: city && city.trim() ? city.trim() : undefined,
-    state: state && state.trim() ? state.trim() : undefined,
-    pincode: pincode && pincode.trim() ? pincode.trim() : undefined,
+    name: (formData.get('name') ?? '') as string,
+    address: (formData.get('address') ?? '') as string,
+    city: typeof city === 'string' && city.trim() ? city.trim() : undefined,
+    state: typeof state === 'string' && state.trim() ? state.trim() : undefined,
+    pincode: typeof pincode === 'string' && pincode.trim() ? pincode.trim() : undefined,
     is_active: formData.get('is_active') === 'true',
-    google_maps_address: googleMapsAddress && googleMapsAddress.trim() ? googleMapsAddress.trim() : null,
+    google_maps_address: typeof googleMapsAddress === 'string' && googleMapsAddress.trim() ? googleMapsAddress.trim() : undefined,
   };
 
   try {

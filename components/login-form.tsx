@@ -1,20 +1,16 @@
 'use client';
 
-import { signInWithGoogle } from '@/lib/actions/auth';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
-
 interface LoginFormProps {
   error?: string;
 }
 
+/** Plain <a> so the browser does a full page navigation to the route handler.
+ * Using Next.js Link would trigger client-side fetch and CORS when the server redirects to Google. */
 function GoogleButton() {
-  const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full flex justify-center items-center gap-2 sm:gap-3 py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white bg-linear-to-r from-[#FF6B35] to-[#FF8C61] hover:from-[#E55A2B] hover:to-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/25 disabled:opacity-50 transition-all duration-200 hover:shadow-lg hover:shadow-[#FF6B35]/20 hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none cursor-pointer"
+    <a
+      href="/api/auth/login?provider=google"
+      className="w-full flex justify-center items-center gap-2 sm:gap-3 py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white bg-linear-to-r from-[#FF6B35] to-[#FF8C61] hover:from-[#E55A2B] hover:to-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/25 transition-all duration-200 hover:shadow-lg hover:shadow-[#FF6B35]/20 hover:-translate-y-0.5 cursor-pointer"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path
@@ -34,15 +30,13 @@ function GoogleButton() {
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
         />
       </svg>
-      {pending ? 'Signing in...' : 'Continue with Google'}
-    </button>
+      Continue with Google
+    </a>
   );
 }
 
 export function LoginForm({ error: urlError }: LoginFormProps) {
-  const [googleState, googleFormAction] = useActionState(signInWithGoogle, null);
-
-  const error = urlError || googleState?.error;
+  const error = urlError;
   const isOAuthError = 
     error?.includes('not enabled') || 
     error?.includes('Unsupported provider') ||
@@ -323,9 +317,9 @@ export function LoginForm({ error: urlError }: LoginFormProps) {
         </div>
       )}
 
-      <form action={googleFormAction} className="mt-5 sm:mt-6">
+      <div className="mt-5 sm:mt-6">
         <GoogleButton />
-      </form>
+      </div>
     </div>
   );
 }

@@ -10,11 +10,18 @@ import { NextResponse } from 'next/server';
  * host the user is on (e.g. https://riyamsports.vercel.app on Vercel),
  * instead of relying on NEXT_PUBLIC_APP_URL which may be unset or localhost.
  */
+function isValidRedirect(path: string | null): path is string {
+  if (!path || typeof path !== 'string') return false;
+  const trimmed = path.trim();
+  return trimmed.startsWith('/') && !trimmed.startsWith('//');
+}
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
   const { searchParams } = requestUrl;
   const provider = searchParams.get('provider') ?? 'google';
+  const redirectParam = searchParams.get('redirect');
 
   if (provider !== 'google') {
     return NextResponse.redirect(
@@ -38,7 +45,17 @@ export async function GET(request: Request) {
   }
 
   if (data.url) {
-    return NextResponse.redirect(data.url);
+    const response = NextResponse.redirect(data.url);
+    if (isValidRedirect(redirectParam)) {
+      response.cookies.set('auth_redirect', redirectParam, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 10,
+        path: '/',
+      });
+    }
+    return response;
   }
 
   return NextResponse.redirect(

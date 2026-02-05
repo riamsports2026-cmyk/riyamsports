@@ -57,13 +57,17 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/complete-profile`);
     }
 
-    // If admin or sub-admin, redirect to admin panel, otherwise to booking page
-    if (userIsAdminOrSubAdmin) {
-      return NextResponse.redirect(`${origin}/admin`);
-    }
+    // If admin or sub-admin, redirect to admin panel, otherwise respect auth_redirect or /book
+    const redirectCookie = request.headers.get('cookie')?.split(';').find(c => c.trim().startsWith('auth_redirect='));
+    const redirectPath = redirectCookie?.split('=')[1]?.trim();
+    const safeRedirect = redirectPath?.startsWith('/') && !redirectPath.startsWith('//') ? redirectPath : null;
 
-    // Profile is complete, redirect to booking page
-    return NextResponse.redirect(`${origin}/book`);
+    const destination = userIsAdminOrSubAdmin
+      ? `${origin}/admin`
+      : `${origin}${safeRedirect || '/book'}`;
+    const response = NextResponse.redirect(destination);
+    response.cookies.set('auth_redirect', '', { maxAge: 0, path: '/' });
+    return response;
   }
 
   // No code provided, redirect to login

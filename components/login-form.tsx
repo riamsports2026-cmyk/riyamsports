@@ -8,10 +8,12 @@ interface LoginFormProps {
 
 /** Plain <a> so the browser does a full page navigation to the route handler.
  * Using Next.js Link would trigger client-side fetch and CORS when the server redirects to Google. */
-function GoogleButton() {
+function GoogleButton({ redirect }: { redirect?: string }) {
+  const qs = new URLSearchParams({ provider: 'google' });
+  if (redirect?.startsWith('/')) qs.set('redirect', redirect);
   return (
     <a
-      href="/api/auth/login?provider=google"
+      href={`/api/auth/login?${qs.toString()}`}
       className="w-full flex justify-center items-center gap-2 sm:gap-3 py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white bg-linear-to-r from-[#FF6B35] to-[#FF8C61] hover:from-[#E55A2B] hover:to-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/25 transition-all duration-200 hover:shadow-lg hover:shadow-[#FF6B35]/20 hover:-translate-y-0.5 cursor-pointer"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -37,7 +39,7 @@ function GoogleButton() {
   );
 }
 
-export function LoginForm({ error: urlError }: LoginFormProps) {
+export function LoginForm({ error: urlError, redirect }: LoginFormProps) {
   const error = urlError;
   const isOAuthError = 
     error?.includes('not enabled') || 
@@ -320,7 +322,7 @@ export function LoginForm({ error: urlError }: LoginFormProps) {
       )}
 
       <div className="mt-5 sm:mt-6">
-        <GoogleButton />
+        <GoogleButton redirect={redirect} />
       </div>
       <p className="mt-4 text-xs text-center text-gray-500">
         By signing in you agree to our{' '}

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; redirect?: string }>;
 }) {
   const params = await searchParams;
   
@@ -37,7 +37,7 @@ export default async function LoginPage({
             {/* <p className="mt-1.5 text-[#1E3A5F] font-semibold text-base sm:text-lg">ARENA</p> */}
             <p className="mt-1 text-[#1E3A5F]/70 text-sm sm:text-base">Turf Booking System</p>
           </div>
-          <LoginForm error={params.error} />
+          <LoginForm error={params.error} redirect={params.redirect} />
         </div>
       </div>
     </div>

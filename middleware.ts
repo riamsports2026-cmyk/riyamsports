@@ -61,8 +61,8 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Public routes (no auth required) – policy pages and login
-  if (pathname === '/terms' || pathname === '/privacy' || pathname === '/refund-policy') {
+  // Public routes (no auth required) – home, policy pages, login
+  if (pathname === '/' || pathname === '/terms' || pathname === '/privacy' || pathname === '/refund-policy') {
     return response;
   }
   if (pathname === '/login' || pathname === '/admin/login' || pathname === '/staff/login' || pathname.startsWith('/api/auth')) {
@@ -85,14 +85,16 @@ export async function middleware(request: NextRequest) {
         return response;
       }
       if (pathname === '/login') {
-        // Check if user is admin or sub-admin
+        const redirectParam = request.nextUrl.searchParams.get('redirect');
+        const safeRedirect = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : null;
+
         const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
         const isAdminOrSubAdminUser = await isAdminOrSubAdmin(user.id);
-        
+
         if (isAdminOrSubAdminUser) {
           return NextResponse.redirect(new URL('/admin', request.url));
         }
-        
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('mobile_number')
@@ -102,7 +104,7 @@ export async function middleware(request: NextRequest) {
         if (!profile?.mobile_number) {
           return NextResponse.redirect(new URL('/complete-profile', request.url));
         }
-        return NextResponse.redirect(new URL('/book', request.url));
+        return NextResponse.redirect(new URL(safeRedirect || '/book', request.url));
       }
     }
     return response;

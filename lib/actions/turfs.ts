@@ -58,6 +58,7 @@ export async function getAvailableSlots(
 ): Promise<number[]> {
   const supabase = await createClient();
 
+  // Only confirmed and pending_payment bookings hold slots. Cancelled/completed do not — slots are available to others.
   const { data: bookings } = await supabase
     .from('bookings')
     .select('booking_slots(hour)')

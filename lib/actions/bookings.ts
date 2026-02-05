@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { BookingWithDetails } from '@/lib/types';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const bookingSchema = z.object({
@@ -111,6 +112,44 @@ export async function getUserBookings(filters?: {
     page,
     totalPages,
   };
+}
+
+/** Customer cancel: set booking_status to cancelled. Only for own booking and only if pending_payment or confirmed. */
+export async function cancelBooking(bookingId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to cancel a booking' };
+  }
+
+  const booking = await getBooking(bookingId);
+  if (!booking) {
+    return { error: 'Booking not found or you do not have permission to cancel it' };
+  }
+
+  if (booking.booking_status === 'cancelled') {
+    return { error: 'This booking is already cancelled' };
+  }
+  if (booking.booking_status === 'completed') {
+    return { error: 'Completed bookings cannot be cancelled' };
+  }
+
+  const serviceClient = await createServiceClient();
+  const { error } = await serviceClient
+    .from('bookings')
+    .update({ booking_status: 'cancelled' })
+    .eq('id', bookingId);
+
+  if (error) {
+    return { error: error.message || 'Failed to cancel booking' };
+  }
+
+  revalidatePath('/bookings');
+  revalidatePath(`/bookings/${bookingId}`);
+  return { success: true };
 }
 
 export async function getBooking(bookingId: string) {

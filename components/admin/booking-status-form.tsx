@@ -32,27 +32,35 @@ export function BookingStatusForm({ bookingId, currentStatus }: BookingStatusFor
     }
   };
 
+  const isCancelled = currentStatus === 'cancelled';
+
   return (
     <>
       <div className="relative w-full min-w-[140px]" style={{ zIndex: 9999 }}>
-        <select
-          value={currentStatus}
-          onChange={(e) => handleStatusChange(e.target.value as any)}
-          disabled={isUpdating}
-          className="block w-full min-w-[140px] pl-3 pr-10 py-2.5 text-sm border-2 border-[#1E3A5F]/20 focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] rounded-xl disabled:opacity-50 cursor-pointer bg-white font-medium text-[#1E3A5F]"
-          style={{ 
-            maxHeight: 'none', 
-            overflow: 'visible',
-            position: 'relative',
-            zIndex: 9999,
-            minWidth: '140px'
-          }}
-        >
-          <option value="pending_payment">Pending Payment</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        {isCancelled ? (
+          <span className="block w-full min-w-[140px] pl-3 pr-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500 font-medium">
+            Cancelled (cannot change)
+          </span>
+        ) : (
+          <select
+            value={currentStatus}
+            onChange={(e) => handleStatusChange(e.target.value as any)}
+            disabled={isUpdating}
+            className="block w-full min-w-[140px] pl-3 pr-10 py-2.5 text-sm border-2 border-[#1E3A5F]/20 focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] rounded-xl disabled:opacity-50 cursor-pointer bg-white font-medium text-[#1E3A5F]"
+            style={{ 
+              maxHeight: 'none', 
+              overflow: 'visible',
+              position: 'relative',
+              zIndex: 9999,
+              minWidth: '140px'
+            }}
+          >
+            <option value="pending_payment">Pending Payment</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        )}
       </div>
 
       <Toast

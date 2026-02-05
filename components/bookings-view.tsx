@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatTimeSlots } from '@/lib/utils/time-format';
 import { ViewMode } from '@/components/ui/view-toggle';
+import { CancelBookingButton } from '@/components/cancel-booking-button';
 
 interface Booking {
   id: string;
@@ -121,6 +123,15 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
           </p>
         )}
       </div>
+      <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-2">
+        <Link
+          href={`/bookings/${booking.id}`}
+          className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-lg text-[#1E3A5F] bg-[#1E3A5F]/10 hover:bg-[#1E3A5F]/20 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30"
+        >
+          View details
+        </Link>
+        <CancelBookingButton bookingId={booking.id} bookingStatus={booking.booking_status} variant="button" />
+      </div>
     </div>
   );
 
@@ -202,6 +213,15 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
                 </p>
               )}
             </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 mt-3 sm:mt-0 sm:ml-4 shrink-0">
+            <Link
+              href={`/bookings/${booking.id}`}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg text-[#1E3A5F] bg-[#1E3A5F]/10 hover:bg-[#1E3A5F]/20 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30"
+            >
+              View details
+            </Link>
+            <CancelBookingButton bookingId={booking.id} bookingStatus={booking.booking_status} variant="button" />
           </div>
         </div>
       </div>

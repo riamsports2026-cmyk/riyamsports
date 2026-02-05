@@ -250,13 +250,17 @@ export async function updateBookingStatus(
 
   const { data: bookRow } = await serviceClient
     .from('bookings')
-    .select('turf:turfs(location_id)')
+    .select('booking_status, turf:turfs(location_id)')
     .eq('id', bookingId)
     .single();
-  const booking = bookRow as { turf?: { location_id?: string } } | null;
+  const booking = bookRow as { booking_status?: string; turf?: { location_id?: string } } | null;
 
   if (!booking || !locationIds.includes(booking.turf?.location_id ?? '')) {
     return { error: 'Unauthorized: Booking not in your assigned locations' };
+  }
+
+  if (booking.booking_status === 'cancelled') {
+    return { error: 'Cannot change status of a cancelled booking.' };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

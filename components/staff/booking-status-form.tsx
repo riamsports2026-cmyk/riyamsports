@@ -48,23 +48,31 @@ export function BookingStatusForm({ bookingId, currentStatus }: BookingStatusFor
     }
   }, [state]);
 
+  const isCancelled = currentStatus === 'cancelled';
+
   return (
     <>
-      <form action={formAction} className="flex items-center gap-2">
-        <input type="hidden" name="status" value={selectedStatus} />
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="block w-full pl-3 pr-10 py-2.5 text-sm border-2 border-[#1E3A5F]/20 focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] rounded-xl cursor-pointer bg-white font-medium text-[#1E3A5F]"
-          style={{ maxHeight: 'none', overflow: 'visible' }}
-        >
-          <option value="pending_payment" className="py-2">Pending Payment</option>
-          <option value="confirmed" className="py-2">Confirmed</option>
-          <option value="completed" className="py-2">Completed</option>
-          <option value="cancelled" className="py-2">Cancelled</option>
-        </select>
-        <SubmitButton />
-      </form>
+      {isCancelled ? (
+        <span className="block w-full pl-3 pr-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500 font-medium">
+          Cancelled (cannot change)
+        </span>
+      ) : (
+        <form action={formAction} className="flex items-center gap-2">
+          <input type="hidden" name="status" value={selectedStatus} />
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="block w-full pl-3 pr-10 py-2.5 text-sm border-2 border-[#1E3A5F]/20 focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] rounded-xl cursor-pointer bg-white font-medium text-[#1E3A5F]"
+            style={{ maxHeight: 'none', overflow: 'visible' }}
+          >
+            <option value="pending_payment" className="py-2">Pending Payment</option>
+            <option value="confirmed" className="py-2">Confirmed</option>
+            <option value="completed" className="py-2">Completed</option>
+            <option value="cancelled" className="py-2">Cancelled</option>
+          </select>
+          <SubmitButton />
+        </form>
+      )}
 
       <Toast
         isOpen={toast.isOpen}

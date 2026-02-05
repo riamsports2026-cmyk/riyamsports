@@ -162,6 +162,16 @@ export async function updateBookingStatus(
 
   const serviceClient = await createServiceClient();
 
+  const { data: existing } = await serviceClient
+    .from('bookings')
+    .select('booking_status')
+    .eq('id', bookingId)
+    .single();
+
+  if (existing && (existing as { booking_status: string }).booking_status === 'cancelled') {
+    return { error: 'Cannot change status of a cancelled booking.' };
+  }
+
   const { error } = await (serviceClient.from('bookings') as any)
     .update({ booking_status: status })
     .eq('id', bookingId);

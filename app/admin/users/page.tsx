@@ -86,50 +86,50 @@ export default async function AdminUsersPage({
           {users.map((user) => (
             <li key={user.id} className="hover:bg-[#FF6B35]/5 transition-colors">
               <div className="px-4 py-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <Link href={`/admin/users/${user.id}`} className="flex items-center min-w-0 flex-1 group">
-                    <div className="shrink-0">
-                      {user.profile?.profile_image ? (
-                        <img
-                          className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-[#FF6B35]/30"
-                          src={user.profile.profile_image}
-                          alt={user.profile.full_name || user.email}
-                        />
-                      ) : (
-                        <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-linear-to-br from-[#1E3A5F] to-[#FF6B35] flex items-center justify-center border-2 border-[#FF6B35]/30">
-                          <span className="text-white text-base sm:text-lg font-bold">
-                            {(user.profile?.full_name || user.email || 'U')[0].toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                      <div className="text-base sm:text-lg font-bold text-[#1E3A5F] truncate group-hover:text-[#FF6B35] transition-colors">
-                        {user.profile?.full_name || user.email}
+                {/* Responsive: stack on mobile; two columns on md+ to avoid overlap */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(280px,1fr)] md:gap-6 md:items-start">
+                  {/* Left: identity + role badges (stacked so badges never overlap phone) */}
+                  <div className="min-w-0 space-y-3">
+                    <Link href={`/admin/users/${user.id}`} className="flex items-start gap-3 sm:gap-4 group">
+                      <div className="shrink-0">
+                        {user.profile?.profile_image ? (
+                          <img
+                            className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-[#FF6B35]/30 object-cover"
+                            src={user.profile.profile_image}
+                            alt={user.profile.full_name || user.email}
+                          />
+                        ) : (
+                          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-linear-to-br from-[#1E3A5F] to-[#FF6B35] flex items-center justify-center border-2 border-[#FF6B35]/30">
+                            <span className="text-white text-base sm:text-lg font-bold">
+                              {(user.profile?.full_name || user.email || 'U')[0].toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-gray-600 truncate">{user.email}</div>
-                      {user.profile?.mobile_number && (
-                        <div className="text-sm text-gray-600">📱 {user.profile.mobile_number}</div>
-                      )}
-                      <span className="text-xs text-[#FF6B35] font-medium mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        View details →
-                      </span>
-                    </div>
-                  </Link>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                    <div className="flex flex-wrap gap-2 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-base sm:text-lg font-bold text-[#1E3A5F] truncate group-hover:text-[#FF6B35] transition-colors">
+                          {user.profile?.full_name || user.email}
+                        </div>
+                        <div className="text-sm text-gray-600 truncate mt-0.5">{user.email}</div>
+                        {user.profile?.mobile_number && (
+                          <div className="text-sm text-gray-600 mt-0.5">📱 {user.profile.mobile_number}</div>
+                        )}
+                        <span className="text-xs text-[#FF6B35] font-medium mt-1 inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          View details →
+                        </span>
+                      </div>
+                    </Link>
+                    {/* Role badges on their own row below identity — no overlap */}
+                    <div className="flex flex-wrap gap-2">
                       {user.roles
                         .filter((role) => {
-                          // Filter out 'customer' role if user has other roles (customer is default)
-                          if (role === 'customer' && user.roles.length > 1) {
-                            return false;
-                          }
+                          if (role === 'customer' && user.roles.length > 1) return false;
                           return true;
                         })
                         .map((role) => (
                           <span
                             key={role}
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border-2 ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
                               role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-300' :
                               role === 'employee' ? 'bg-blue-100 text-blue-800 border-blue-300' :
                               role === 'manager' ? 'bg-green-100 text-green-800 border-green-300' :
@@ -142,9 +142,13 @@ export default async function AdminUsersPage({
                           </span>
                         ))}
                     </div>
-                    <UserRoleForm 
-                      userId={user.id} 
-                      currentRoles={user.roles} 
+                  </div>
+                  {/* Right: role form in its own column with clear spacing */}
+                  <div className="min-w-0 rounded-lg border border-gray-200 bg-gray-50/50 p-3 sm:p-4">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Assign role</p>
+                    <UserRoleForm
+                      userId={user.id}
+                      currentRoles={user.roles}
                       allRoles={assignableRoles}
                       locations={locations}
                       userRoleDetails={userRoleDetails.get(user.id)}

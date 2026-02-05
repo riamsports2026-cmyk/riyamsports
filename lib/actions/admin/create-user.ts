@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isAdminOrSubAdmin } from '@/lib/utils/roles';
+import { validateMobileNumber } from '@/lib/utils/phone';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -10,7 +11,10 @@ const createUserSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(1, 'Full name is required'),
-  mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
+  mobileNumber: z.string().refine(
+    (v) => validateMobileNumber(v, { normalize: false }).valid,
+    (v) => ({ message: validateMobileNumber(v, { normalize: false }).error ?? 'Invalid mobile number' })
+  ),
   roleName: z.string().min(1, 'Role is required'),
   locationId: z.string().uuid().optional(),
 });
@@ -62,11 +66,12 @@ export async function createUserWithRole(
 
     const userId = authUser.user.id;
 
+    const mobileNormalized = validateMobileNumber(validated.mobileNumber, { normalize: true }).normalized ?? validated.mobileNumber;
     // Create profile
     const { error: profileError } = await (serviceClient.from('profiles') as any).insert({
       id: userId,
       full_name: validated.fullName,
-      mobile_number: validated.mobileNumber,
+      mobile_number: mobileNormalized,
     });
 
     if (profileError) {

@@ -146,6 +146,7 @@ export async function sendPaymentReminder(bookingId: string) {
     customerPhone: booking.user?.mobile_number || '',
     totalAmount: booking.total_amount,
     paymentAmount: Number(booking.advance_amount ?? 0),
+    bookingRowId: (booking as { id?: string }).id,
   };
 
   const result = await BookingReminderService.sendPaymentReminder(reminderData);

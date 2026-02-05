@@ -1,3 +1,5 @@
+import { validateMobileNumber } from '@/lib/utils/phone';
+
 export interface WhatsAppMessage {
   to: string; // Phone number with country code (e.g., +919876543210)
   message: string;
@@ -93,16 +95,23 @@ export class WhatsAppService {
   }
 
   /**
-   * Send WhatsApp message - automatically selects provider based on env config
+   * Send WhatsApp message - automatically selects provider based on env config.
+   * Validates and normalizes the recipient number before sending.
    */
   static async send(message: WhatsAppMessage): Promise<{ success: boolean; error?: string }> {
-    const provider = process.env.WHATSAPP_PROVIDER || 'twilio';
-
-    if (provider === 'meta') {
-      return this.sendViaMeta(message);
-    } else {
-      return this.sendViaTwilio(message);
+    const validation = validateMobileNumber(message.to, { normalize: true });
+    if (!validation.valid) {
+      return { success: false, error: validation.error || 'Invalid mobile number' };
     }
+    const normalizedMessage: WhatsAppMessage = {
+      ...message,
+      to: validation.normalized ?? message.to,
+    };
+    const provider = process.env.WHATSAPP_PROVIDER || 'twilio';
+    if (provider === 'meta') {
+      return this.sendViaMeta(normalizedMessage);
+    }
+    return this.sendViaTwilio(normalizedMessage);
   }
 
   /**

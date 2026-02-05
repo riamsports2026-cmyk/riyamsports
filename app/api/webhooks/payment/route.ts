@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { PaymentService } from '@/lib/services/payment';
+import { BookingReminderService } from '@/lib/services/booking-reminders';
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
@@ -65,6 +66,11 @@ export async function POST(request: NextRequest) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payment.booking_id);
+            // WhatsApp payment success notification
+            await BookingReminderService.sendPaymentSuccessByBookingId(
+              payment.booking_id,
+              paymentAmount
+            );
           }
         }
       }
@@ -110,6 +116,11 @@ export async function POST(request: NextRequest) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payment.booking_id);
+            // WhatsApp payment success notification
+            await BookingReminderService.sendPaymentSuccessByBookingId(
+              payment.booking_id,
+              paymentAmount
+            );
           }
         }
       }

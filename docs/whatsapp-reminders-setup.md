@@ -2,12 +2,13 @@
 
 This guide explains how to set up WhatsApp reminders for bookings.
 
-## Features
+## Features (Notifications Module)
 
-- ✅ Automatic booking confirmation messages
-- ✅ 24-hour reminder before booking
-- ✅ Payment reminder messages
-- ✅ Support for Twilio and Meta WhatsApp Business API
+- ✅ **WhatsApp Booking Confirmation** – Sent automatically when a booking is created
+- ✅ **Payment Success Notification** – Sent when payment is captured (Razorpay/PayGlobal webhook)
+- ✅ **Booking Reminder (Scheduled)** – Sent 24 hours before booking via cron (`/api/cron/send-booking-reminders`)
+- ✅ **Dynamic Message Templates** – Templates in `lib/services/notification-templates.ts` with placeholders (`{{booking_id}}`, `{{date}}`, etc.)
+- ✅ **Customer Mobile Number Validation** – Validation and normalization in `lib/utils/phone.ts`; used in profile, complete-profile, admin create-user, and before sending WhatsApp
 
 ## Setup Options
 
@@ -129,17 +130,14 @@ WHERE reminder_sent IS NULL;
 
 ## Message Templates
 
-The system sends three types of messages:
+Templates are defined in `lib/services/notification-templates.ts` with placeholders like `{{booking_id}}`, `{{date}}`, `{{time_slots}}`, `{{location}}`, `{{amount_paid}}`, etc. The system sends:
 
-1. **Confirmation**: Sent after booking creation
-2. **Reminder**: Sent 24 hours before booking
-3. **Payment Reminder**: Sent for pending payments
+1. **Booking Confirmation** – After booking creation (with payment link if pending)
+2. **Payment Success** – When payment is captured (webhook)
+3. **Booking Reminder** – 24 hours before booking (cron)
+4. **Payment Reminder** – For pending payments (manual or scheduled)
 
-All messages include:
-- Booking ID
-- Location and service details
-- Date and time slots
-- Amount information
+All messages include booking ID, location, service, turf, date, time slots, and amount info. To change copy, edit the template strings in `notification-templates.ts`.
 
 ## Troubleshooting
 
@@ -150,14 +148,19 @@ All messages include:
 3. Check Twilio/Meta account status and credits
 4. Review error logs in the API response
 
-### Phone Number Format
+### Phone Number Format and Validation
 
-Phone numbers should be in international format:
-- ✅ `+919876543210`
-- ✅ `919876543210`
-- ❌ `9876543210` (missing country code)
+Customer mobile numbers are validated in:
+- **Profile / Complete Profile** – `lib/actions/profile.ts` uses `lib/utils/phone.ts`
+- **Admin Create User** – `lib/actions/admin/create-user.ts`
+- **WhatsApp send** – `WhatsAppService.send()` validates and normalizes before sending
 
-The service automatically formats numbers if country code is missing.
+Accepted formats:
+- ✅ Indian 10-digit: `9876543210`, `919876543210`, `+919876543210`
+- ✅ E.164 for other countries (10–15 digits with country code)
+- ❌ Invalid: missing digits, wrong length, or non-numeric
+
+The service normalizes to a consistent format (e.g. `+91` + 10 digits) before saving or sending.
 
 ## Cost Considerations
 

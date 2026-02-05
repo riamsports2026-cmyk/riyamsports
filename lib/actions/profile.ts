@@ -4,10 +4,14 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { Profile } from '@/lib/types';
+import { validateMobileNumber } from '@/lib/utils/phone';
 
 const profileSchema = z.object({
   full_name: z.string().min(1, 'Full name is required'),
-  mobile_number: z.string().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
+  mobile_number: z.string().refine(
+    (v) => validateMobileNumber(v, { normalize: false }).valid,
+    (v) => ({ message: validateMobileNumber(v, { normalize: false }).error ?? 'Invalid mobile number' })
+  ),
   profile_image: z
     .union([z.string().url('Invalid URL format'), z.literal(''), z.null()])
     .optional()
@@ -37,12 +41,14 @@ export async function updateProfile(
 
   try {
     const validated = profileSchema.parse(data);
+    const phoneResult = validateMobileNumber(validated.mobile_number, { normalize: true });
+    const mobileToSave = phoneResult.normalized ?? validated.mobile_number;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('profiles') as any).upsert({
       id: user.id,
       full_name: validated.full_name,
-      mobile_number: validated.mobile_number,
+      mobile_number: mobileToSave,
       profile_image: validated.profile_image || null,
     });
 

@@ -1,8 +1,10 @@
 # Next.js on Netlify – use the Next.js plugin so all routes work (no 404s)
 # https://docs.netlify.com/frameworks/next-js/overview/
+# Publish must not be the repo root; the Next.js plugin uses its own output.
 
 [build]
   command = "npm run build"
+  publish = ".next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

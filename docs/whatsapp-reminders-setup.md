@@ -10,45 +10,39 @@ This guide explains how to set up WhatsApp reminders for bookings.
 - ✅ **Dynamic Message Templates** – Templates in `lib/services/notification-templates.ts` with placeholders (`{{booking_id}}`, `{{date}}`, etc.)
 - ✅ **Customer Mobile Number Validation** – Validation and normalization in `lib/utils/phone.ts`; used in profile, complete-profile, admin create-user, and before sending WhatsApp
 
-## Setup Options
+## Setup (AskEva only)
 
-### Option 1: Twilio WhatsApp API (Recommended for Quick Setup)
+WhatsApp notifications use the **AskEva Consumer API** only. Messages are sent as **template messages** (one template with a single body variable for the full message text).
 
-1. **Sign up for Twilio**
-   - Go to https://www.twilio.com
-   - Create an account and verify your phone number
-   - Get a Twilio WhatsApp-enabled number
+1. **Get API key**
+   - Log in to AskEva Dashboard → **Settings** → **API Settings** → **Create New API Key**
+   - Copy the token (used as query parameter on every request)
 
-2. **Get Credentials**
-   - Account SID: Found in Twilio Console Dashboard
-   - Auth Token: Found in Twilio Console Dashboard
-   - WhatsApp From Number: Format `whatsapp:+14155238886`
-
-3. **Add to Environment Variables**
-   ```env
-   WHATSAPP_PROVIDER=twilio
-   TWILIO_ACCOUNT_SID=your_account_sid
-   TWILIO_AUTH_TOKEN=your_auth_token
-   TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-   ```
-
-### Option 2: Meta WhatsApp Business API
-
-1. **Set up Meta Business Account**
-   - Go to https://business.facebook.com
-   - Create a Business Account
-   - Set up WhatsApp Business API
-
-2. **Get Credentials**
-   - Access Token: From Meta Business Manager
-   - Phone Number ID: Your WhatsApp Business phone number ID
+2. **Create a default message template (for all notifications)**
+   - In AskEva / Facebook WhatsApp Manager, create a template with **one body variable** (e.g. `{{1}}` or your template’s variable).
+   - Example body: `Hello, here is your message: {{1}}`
+   - Note the template **name** (e.g. `riamsports_message`).
 
 3. **Add to Environment Variables**
    ```env
-   WHATSAPP_PROVIDER=meta
-   WHATSAPP_ACCESS_TOKEN=your_access_token
-   WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+   ASKEVA_API_TOKEN=your_api_key_from_dashboard
+   ASKEVA_DEFAULT_MESSAGE_TEMPLATE=riamsports_message
    ```
+   - **One template for all:** Set only `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`; every notification uses it (message text in the single body variable).
+   - **Different template per notification (recommended):** Create four templates in AskEva (each with one body variable `{{1}}`) and set:
+   ```env
+   ASKEVA_TEMPLATE_BOOKING_CONFIRMATION=riamsports_booking_confirm
+   ASKEVA_TEMPLATE_PAYMENT_SUCCESS=riamsports_payment_success
+   ASKEVA_TEMPLATE_BOOKING_REMINDER=riamsports_booking_reminder
+   ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
+   ```
+   If a per-type variable is missing, the app falls back to `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`, then `postman_textvariable`.
+
+4. **API details (for reference)**
+   - Base URL: `https://backend.askeva.io/v1`
+   - Send message: `POST /v1/message/send-message?token=YOUR_TOKEN`
+   - Body: `{ "to": "919876543210", "type": "template", "template": { "language": { "policy": "deterministic", "code": "en" }, "name": "...", "components": [ { "type": "body", "parameters": [ { "type": "text", "text": "..." } ] } ] } }`
+   - Get templates: `GET https://backend.askeva.io/v1/templates?token=YOUR_TOKEN`
 
 ## Setting Up Automated Reminders
 
@@ -164,10 +158,7 @@ The service normalizes to a consistent format (e.g. `+91` + 10 digits) before sa
 
 ## Cost Considerations
 
-- **Twilio**: Pay per message (varies by country)
-- **Meta**: Free tier available, then pay per conversation
-
-Check pricing on respective provider websites.
+Check AskEva pricing for WhatsApp message/conversation costs.
 
 
 

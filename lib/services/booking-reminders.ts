@@ -40,6 +40,7 @@ export class BookingReminderService {
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
       message,
+      askevaTemplateName: WhatsAppService.getTemplateNameFor('booking_confirmation'),
     });
   }
 
@@ -51,6 +52,7 @@ export class BookingReminderService {
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
       message,
+      askevaTemplateName: WhatsAppService.getTemplateNameFor('booking_reminder'),
     });
   }
 
@@ -67,6 +69,7 @@ export class BookingReminderService {
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
       message,
+      askevaTemplateName: WhatsAppService.getTemplateNameFor('payment_success'),
     });
   }
 
@@ -89,6 +92,7 @@ export class BookingReminderService {
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
       message,
+      askevaTemplateName: WhatsAppService.getTemplateNameFor('payment_reminder'),
     });
   }
 

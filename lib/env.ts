@@ -11,13 +11,9 @@ const envSchema = z.object({
   PAYGLOBAL_BASE_URL: z.string().url().optional(),
   PAYGLOBAL_WEBHOOK_SECRET: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-  // WhatsApp Configuration
-  WHATSAPP_PROVIDER: z.enum(['twilio', 'meta']).optional(),
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_WHATSAPP_FROM: z.string().optional(),
-  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
-  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  // WhatsApp (AskEva only)
+  ASKEVA_API_TOKEN: z.string().optional(),
+  ASKEVA_DEFAULT_MESSAGE_TEMPLATE: z.string().optional(),
   CRON_SECRET: z.string().optional(),
 });
 
@@ -32,12 +28,8 @@ const envResult = envSchema.safeParse({
   PAYGLOBAL_BASE_URL: process.env.PAYGLOBAL_BASE_URL,
   PAYGLOBAL_WEBHOOK_SECRET: process.env.PAYGLOBAL_WEBHOOK_SECRET,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  WHATSAPP_PROVIDER: process.env.WHATSAPP_PROVIDER || 'twilio',
-  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-  TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
-  WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
-  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+  ASKEVA_API_TOKEN: process.env.ASKEVA_API_TOKEN,
+  ASKEVA_DEFAULT_MESSAGE_TEMPLATE: process.env.ASKEVA_DEFAULT_MESSAGE_TEMPLATE,
   CRON_SECRET: process.env.CRON_SECRET,
 });
 
@@ -54,12 +46,8 @@ const fallback: z.infer<typeof envSchema> = {
   PAYGLOBAL_API_KEY: process.env.PAYGLOBAL_API_KEY,
   PAYGLOBAL_BASE_URL: process.env.PAYGLOBAL_BASE_URL as string | undefined,
   PAYGLOBAL_WEBHOOK_SECRET: process.env.PAYGLOBAL_WEBHOOK_SECRET,
-  WHATSAPP_PROVIDER: (process.env.WHATSAPP_PROVIDER || 'twilio') as 'twilio' | 'meta',
-  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-  TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
-  WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
-  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+  ASKEVA_API_TOKEN: process.env.ASKEVA_API_TOKEN,
+  ASKEVA_DEFAULT_MESSAGE_TEMPLATE: process.env.ASKEVA_DEFAULT_MESSAGE_TEMPLATE,
   CRON_SECRET: process.env.CRON_SECRET,
 };
 

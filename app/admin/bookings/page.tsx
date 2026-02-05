@@ -60,10 +60,10 @@ export default async function AdminBookingsPage({
         <AdminBookingFilters />
       </Suspense>
 
-      <div className="bg-white rounded-xl shadow-lg border-2 border-[#1E3A5F]/10 mt-6" style={{ overflow: 'visible' }}>
+      <div className="bg-white rounded-xl shadow-lg border-2 border-[#1E3A5F]/10 mt-6 overflow-hidden">
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto" style={{ overflowY: 'visible' }}>
-          <table className="min-w-full divide-y divide-gray-200" style={{ position: 'relative' }}>
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-linear-to-r from-[#1E3A5F] to-[#2D4F7C]">
               <tr>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
@@ -181,28 +181,16 @@ export default async function AdminBookingsPage({
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      booking.booking_status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                      booking.booking_status === 'pending_payment' ? 'bg-yellow-100 text-yellow-800' :
-                      booking.booking_status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {booking.booking_status}
-                    </span>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap min-w-[140px]">
+                    <BookingStatusForm bookingId={booking.id} currentStatus={booking.booking_status} />
                   </td>
-                  <td className="px-4 lg:px-6 py-4 text-sm font-medium" style={{ position: 'relative', overflow: 'visible', minWidth: '150px' }}>
-                    <div className="flex flex-col gap-2">
-                      <Link
-                        href={`/admin/bookings/${booking.id}`}
-                        className="text-xs text-[#FF6B35] hover:text-[#E55A2B] font-semibold cursor-pointer whitespace-nowrap"
-                      >
-                        View Details
-                      </Link>
-                      <div style={{ position: 'relative', zIndex: 9999, minWidth: '140px' }}>
-                        <BookingStatusForm bookingId={booking.id} currentStatus={booking.booking_status} />
-                      </div>
-                    </div>
+                  <td className="px-4 lg:px-6 py-4 text-sm font-medium">
+                    <Link
+                      href={`/admin/bookings/${booking.id}`}
+                      className="text-xs text-[#FF6B35] hover:text-[#E55A2B] font-semibold cursor-pointer whitespace-nowrap"
+                    >
+                      View Details
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -214,25 +202,13 @@ export default async function AdminBookingsPage({
         <div className="md:hidden divide-y divide-gray-200">
           {bookings.map((booking) => (
             <div key={booking.id} className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">
-                    {booking.booking_id}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {booking.turf?.location?.name}
-                  </p>
-                </div>
-                <div className="ml-2 shrink-0">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    booking.booking_status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    booking.booking_status === 'pending_payment' ? 'bg-yellow-100 text-yellow-800' :
-                    booking.booking_status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {booking.booking_status}
-                  </span>
-                </div>
+              <div className="mb-3">
+                <h3 className="text-sm font-medium text-gray-900 truncate">
+                  {booking.booking_id}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {booking.turf?.location?.name}
+                </p>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

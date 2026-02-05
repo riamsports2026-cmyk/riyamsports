@@ -79,24 +79,9 @@ export default async function StaffDashboard({
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex-1 w-full">
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <h3 className="text-lg sm:text-xl font-bold text-[#1E3A5F]">
-                          Booking #{booking.booking_id}
-                        </h3>
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border-2 ${
-                            booking.booking_status === 'confirmed'
-                              ? 'bg-green-100 text-green-800 border-green-300'
-                              : booking.booking_status === 'pending_payment'
-                              ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                              : booking.booking_status === 'completed'
-                              ? 'bg-blue-100 text-blue-800 border-blue-300'
-                              : 'bg-red-100 text-red-800 border-red-300'
-                          }`}
-                        >
-                          {booking.booking_status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-[#1E3A5F] mb-3">
+                        Booking #{booking.booking_id}
+                      </h3>
                       <div className="mt-2 text-sm text-gray-700 space-y-1.5">
                         <p>
                           <span className="font-semibold text-[#1E3A5F]">📍 Location:</span>{' '}

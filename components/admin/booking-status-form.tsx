@@ -36,7 +36,7 @@ export function BookingStatusForm({ bookingId, currentStatus }: BookingStatusFor
 
   return (
     <>
-      <div className="relative w-full min-w-[140px]" style={{ zIndex: 9999 }}>
+      <div className="relative w-full min-w-[140px] z-10">
         {isCancelled ? (
           <span className="block w-full min-w-[140px] pl-3 pr-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500 font-medium">
             Cancelled (cannot change)
@@ -49,9 +49,6 @@ export function BookingStatusForm({ bookingId, currentStatus }: BookingStatusFor
             className="block w-full min-w-[140px] pl-3 pr-10 py-2.5 text-sm border-2 border-[#1E3A5F]/20 focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] rounded-xl disabled:opacity-50 cursor-pointer bg-white font-medium text-[#1E3A5F]"
             style={{ 
               maxHeight: 'none', 
-              overflow: 'visible',
-              position: 'relative',
-              zIndex: 9999,
               minWidth: '140px'
             }}
           >

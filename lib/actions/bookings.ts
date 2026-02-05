@@ -138,8 +138,7 @@ export async function cancelBooking(bookingId: string) {
   }
 
   const serviceClient = await createServiceClient();
-  const { error } = await serviceClient
-    .from('bookings')
+  const { error } = await (serviceClient.from('bookings') as any)
     .update({ booking_status: 'cancelled' })
     .eq('id', bookingId);
 

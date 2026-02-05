@@ -91,8 +91,8 @@ export function BalanceUpdateForm({
           </div>
           <div className="flex justify-between">
             <span>Balance:</span>
-            <span className={`font-semibold ${balanceAmount > 0 ? 'text-[#FF6B35]' : 'text-green-600'}`}>
-              ₹{balanceAmount.toLocaleString()}
+            <span className={`font-semibold ${remainingBalance > 0 ? 'text-[#FF6B35]' : 'text-green-600'}`}>
+              ₹{remainingBalance.toLocaleString()}
             </span>
           </div>
         </div>

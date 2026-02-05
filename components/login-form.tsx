@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 interface LoginFormProps {
   error?: string;
 }
@@ -320,6 +322,14 @@ export function LoginForm({ error: urlError }: LoginFormProps) {
       <div className="mt-5 sm:mt-6">
         <GoogleButton />
       </div>
+      <p className="mt-4 text-xs text-center text-gray-500">
+        By signing in you agree to our{' '}
+        <Link href="/terms" className="text-[#FF6B35] hover:underline font-medium">Terms & Conditions</Link>
+        ,{' '}
+        <Link href="/privacy" className="text-[#FF6B35] hover:underline font-medium">Privacy Policy</Link>
+        {' '}and{' '}
+        <Link href="/refund-policy" className="text-[#FF6B35] hover:underline font-medium">Refund Policy</Link>.
+      </p>
     </div>
   );
 }

@@ -93,12 +93,12 @@ export function MobileMenu({
               <div className="flex items-center space-x-3">
                 <img 
                   src="/Riamlogo.png" 
-                  alt="RIAM Sports Arena" 
+                  alt="RIAM Sports" 
                   className="h-10 w-10 object-contain"
                 />
                 <div>
                   <div className="text-lg font-bold text-white">RIAM Sports</div>
-                  <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div>
+                  {/* <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div> */}
                 </div>
               </div>
               <button

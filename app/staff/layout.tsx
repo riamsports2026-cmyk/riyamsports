@@ -80,12 +80,12 @@ export default async function StaffLayout({
                 <div className="shrink-0 flex items-center space-x-3">
                   <img 
                     src="/Riamlogo.png" 
-                    alt="RIAM Sports Arena" 
+                    alt="RIAM Sports" 
                     className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
                   />
                   <div>
                     <h1 className="text-lg sm:text-xl font-bold bg-linear-to-r from-[#1E3A5F] to-[#FF6B35] bg-clip-text text-transparent">Staff Portal</h1>
-                    <p className="text-xs text-[#FF6B35] font-semibold hidden sm:block">RIAM Sports Arena</p>
+                    <p className="text-xs text-[#FF6B35] font-semibold hidden sm:block">RIAM Sports</p>
                   </div>
                 </div>
                 <nav className="flex flex-wrap gap-2 sm:gap-4 sm:ml-6 sm:space-x-2">
@@ -183,12 +183,12 @@ export default async function StaffLayout({
               <div className="shrink-0 flex items-center space-x-3">
                 <img 
                   src="/Riamlogo.png" 
-                  alt="RIAM Sports Arena" 
+                  alt="RIAM Sports" 
                   className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
                 />
                 <div>
                   <h1 className="text-lg sm:text-xl font-bold bg-linear-to-r from-[#1E3A5F] to-[#FF6B35] bg-clip-text text-transparent">Staff Portal</h1>
-                  <p className="text-xs text-[#FF6B35] font-semibold hidden sm:block">RIAM Sports Arena</p>
+                  <p className="text-xs text-[#FF6B35] font-semibold hidden sm:block">RIAM Sports</p>
                 </div>
               </div>
               <nav className="flex flex-wrap gap-2 sm:gap-4 sm:ml-6 sm:space-x-2">

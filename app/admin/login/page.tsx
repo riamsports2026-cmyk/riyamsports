@@ -27,7 +27,7 @@ export default function AdminLoginPage({
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
               <div className="p-2 rounded-2xl bg-linear-to-br from-[#1E3A5F]/5 to-[#FF6B35]/5 ring-1 ring-[#1E3A5F]/10">
-                <img src="/Riamlogo.png" alt="RIAM Sports Arena" className="h-14 w-14 sm:h-20 sm:w-20 object-contain" />
+                <img src="/Riamlogo.png" alt="RIAM Sports" className="h-14 w-14 sm:h-20 sm:w-20 object-contain" />
               </div>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-[#1E3A5F] via-[#2D4F7C] to-[#FF6B35] bg-clip-text text-transparent tracking-tight">

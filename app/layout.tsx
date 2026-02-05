@@ -47,9 +47,9 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    siteName: 'RIAM Sports Arena',
+    siteName: 'RIAM Sports',
     title: 'RIAM Sports - Turf Booking',
-    description: 'Book your favorite turf at RIAM Sports Arena',
+    description: 'Book your favorite turf at RIAM Sports',
   },
 };
 

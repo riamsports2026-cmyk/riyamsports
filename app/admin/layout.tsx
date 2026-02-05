@@ -49,7 +49,7 @@ export default async function AdminLayout({
             <div className="flex items-center space-x-3 sm:space-x-4">
               <img 
                 src="/Riamlogo.png" 
-                alt="RIAM Sports Arena" 
+                alt="RIAM Sports" 
                 className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
               />
               <div>
@@ -57,7 +57,7 @@ export default async function AdminLayout({
                   Admin Panel
                 </h1>
                 <p className="text-xs text-[#FF6B35] font-semibold hidden sm:block">
-                  RIAM Sports Arena
+                  RIAM Sports
                 </p>
               </div>
             </div>

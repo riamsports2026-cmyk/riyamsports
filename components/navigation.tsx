@@ -38,12 +38,12 @@ export async function Navigation() {
               <Link href="/book" className="flex items-center space-x-2 sm:space-x-3 group">
                 <img 
                   src="/Riamlogo.png" 
-                  alt="RIAM Sports Arena" 
+                  alt="RIAM Sports" 
                   className="h-10 w-10 sm:h-12 sm:w-14 object-contain transition-transform group-hover:scale-105"
                 />
                 <div className="hidden sm:block">
                   <div className="text-xl font-bold text-[#1E3A5F] leading-tight">RIAM Sports</div>
-                  <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div>
+                  {/* <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div> */}
                 </div>
               </Link>
             </div>
@@ -100,10 +100,10 @@ export async function Navigation() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             <Link href="/book" className="flex items-center space-x-2 sm:space-x-3 group">
-              <img src="/Riamlogo.png" alt="RIAM Sports Arena" className="h-10 w-10 sm:h-12 sm:w-14 object-contain" />
+              <img src="/Riamlogo.png" alt="RIAM Sports" className="h-10 w-10 sm:h-12 sm:w-14 object-contain" />
               <div className="hidden sm:block">
                 <div className="text-xl font-bold text-[#1E3A5F] leading-tight">RIAM Sports</div>
-                <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div>
+                {/* <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div> */}
               </div>
             </Link>
             <Link href="/login" className="text-[#1E3A5F] hover:text-[#FF6B35] px-4 py-2 rounded-lg text-sm font-semibold">

@@ -61,7 +61,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Public login routes
+  // Public routes (no auth required) – policy pages and login
+  if (pathname === '/terms' || pathname === '/privacy' || pathname === '/refund-policy') {
+    return response;
+  }
   if (pathname === '/login' || pathname === '/admin/login' || pathname === '/staff/login' || pathname.startsWith('/api/auth')) {
     if (user) {
       // If already logged in, redirect based on route and role

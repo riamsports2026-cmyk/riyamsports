@@ -97,6 +97,65 @@ export class BookingReminderService {
   }
 
   /**
+   * Send booking cancellation notification (dynamic template).
+   */
+  static async sendCancellation(data: BookingReminderData): Promise<{ success: boolean; error?: string }> {
+    const message = getRenderedTemplate('booking_cancellation', buildTemplateContext(data));
+    return WhatsAppService.send({
+      to: WhatsAppService.formatPhoneNumber(data.customerPhone),
+      message,
+      askevaTemplateName: WhatsAppService.getTemplateNameFor('booking_cancellation'),
+    });
+  }
+
+  /**
+   * Fetch booking details and send cancellation notification (for use from actions).
+   */
+  static async sendCancellationByBookingId(bookingRowId: string): Promise<{ success: boolean; error?: string }> {
+    const serviceClient = await createServiceClient();
+    const { data: booking, error } = await serviceClient
+      .from('bookings')
+      .select(`
+        booking_id,
+        booking_date,
+        total_amount,
+        user:profiles!bookings_user_id_fkey(full_name, mobile_number),
+        turf:turfs(
+          name,
+          location:locations(name),
+          service:services(name)
+        ),
+        slots:booking_slots(hour)
+      `)
+      .eq('id', bookingRowId)
+      .single();
+
+    if (error || !booking) {
+      return { success: false, error: 'Booking not found' };
+    }
+
+    const b = booking as any;
+    if (!b.user?.mobile_number) {
+      return { success: false, error: 'Customer phone number not found' };
+    }
+
+    const data: BookingReminderData = {
+      bookingId: b.booking_id,
+      bookingDate: b.booking_date,
+      timeSlots: (b.slots || [])
+        .map((slot: { hour: number }) => `${String(slot.hour).padStart(2, '0')}:00`)
+        .sort(),
+      location: b.turf?.location?.name || '',
+      service: b.turf?.service?.name || '',
+      turf: b.turf?.name || '',
+      customerName: b.user?.full_name || 'Customer',
+      customerPhone: b.user?.mobile_number || '',
+      totalAmount: Number(b.total_amount),
+    };
+    return this.sendCancellation(data);
+  }
+
+  /**
    * Get bookings that need a reminder for a given "minutes before" window.
    * Booking start = booking_date + min(slots).hour. Send when that is ~minutesBefore from now.
    * Excludes bookings that already have a reminder sent for this minutes_before.

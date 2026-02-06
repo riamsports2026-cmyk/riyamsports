@@ -29,12 +29,13 @@ WhatsApp notifications use the **AskEva Consumer API** only. Messages are sent a
    ASKEVA_DEFAULT_MESSAGE_TEMPLATE=riamsports_message
    ```
    - **One template for all:** Set only `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`; every notification uses it (message text in the single body variable).
-   - **Different template per notification (recommended):** Create four templates in AskEva (each with one body variable `{{1}}`) and set:
+   - **Different template per notification (recommended):** Create five templates in AskEva (each with one body variable `{{1}}`) and set:
    ```env
    ASKEVA_TEMPLATE_BOOKING_CONFIRMATION=riamsports_booking_confirm
    ASKEVA_TEMPLATE_PAYMENT_SUCCESS=riamsports_payment_success
    ASKEVA_TEMPLATE_BOOKING_REMINDER=riamsports_booking_reminder
    ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
+   ASKEVA_TEMPLATE_BOOKING_CANCELLATION=riamsports_booking_cancellation
    ```
    If a per-type variable is missing, the app falls back to `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`, then `postman_textvariable`.
 
@@ -61,7 +62,7 @@ Then set only: `ASKEVA_DEFAULT_MESSAGE_TEMPLATE=riamsports_message`
 
 ---
 
-**Option 2 – Four templates (one per notification type)**
+**Option 2 – Five templates (one per notification type)**
 
 Use this **exact structure** when creating each template:
 
@@ -69,8 +70,9 @@ Use this **exact structure** when creating each template:
 |---|----------------------------|----------|-----------|-----------------|
 | 1 | `riamsports_booking_confirmation` | English (en) | See below | After customer creates a booking |
 | 2 | `riamsports_payment_success`      | English (en) | See below | After payment is successful |
-| 3 | `riamsports_booking_reminder`    | English (en) | See below | 24 hours before booking |
+| 3 | `riamsports_booking_reminder`    | English (en) | See below | Before booking (configurable) |
 | 4 | `riamsports_payment_reminder`    | English (en) | See below | When you send a payment reminder |
+| 5 | `riamsports_booking_cancellation` | English (en) | See below | When a booking is cancelled (customer or admin/staff) |
 
 **Body text for each template:** use exactly **one variable** `{{1}}`. The app will replace it with the full message.
 
@@ -94,6 +96,7 @@ Booking confirmed. ID: BK123. Date: 15 Jan 2025. Location: Main Turf. Amount: Rs
 2. **Payment success** – thank you + booking details + amount paid and total.
 3. **Booking reminder** – reminder text + booking details (no amount).
 4. **Payment reminder** – pending payment + booking ID, date, location, amount due + payment link.
+5. **Booking cancellation** – cancellation notice + booking details (ID, location, service, turf, date, time).
 
 After creating the templates, set in your env (names must match exactly):
 
@@ -102,6 +105,7 @@ ASKEVA_TEMPLATE_BOOKING_CONFIRMATION=riamsports_booking_confirmation
 ASKEVA_TEMPLATE_PAYMENT_SUCCESS=riamsports_payment_success
 ASKEVA_TEMPLATE_BOOKING_REMINDER=riamsports_booking_reminder
 ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
+ASKEVA_TEMPLATE_BOOKING_CANCELLATION=riamsports_booking_cancellation
 ```
 
 ---

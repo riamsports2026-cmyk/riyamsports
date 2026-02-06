@@ -180,6 +180,12 @@ export async function updateBookingStatus(
     return { error: error.message };
   }
 
+  // WhatsApp cancellation notification when status set to cancelled
+  if (status === 'cancelled') {
+    const { BookingReminderService } = await import('@/lib/services/booking-reminders');
+    BookingReminderService.sendCancellationByBookingId(bookingId).catch(() => {});
+  }
+
   return { success: true };
 }
 

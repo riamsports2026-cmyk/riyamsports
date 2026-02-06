@@ -70,9 +70,7 @@ This is a reminder for your upcoming booking:
 • Date: {{date}}
 • Time: {{timeslots}}
 
-We look forward to seeing you! 🎾
-
-For any changes or cancellations, please contact us.`,
+We look forward to seeing you! 🎾`,
 
   /** Payment reminder (pending payment). */
   payment_reminder: `💳 *RIAM Sports - Payment Reminder*
@@ -88,6 +86,21 @@ Your booking payment is pending:
 Please complete the payment to confirm your booking.
 
 Pay now: {{paymenturl}}`,
+
+  /** Sent when a booking is cancelled. */
+  booking_cancellation: `❌ *RIAM Sports - Booking Cancelled*
+
+Your booking has been cancelled.
+
+📋 *Booking Details:*
+• Booking ID: {{bookingid}}
+• Location: {{location}}
+• Service: {{service}}
+• Turf: {{turf}}
+• Date: {{date}}
+• Time: {{timeslots}}
+
+If you did not request this cancellation or have any queries, please contact us.`,
 } as const;
 
 export type TemplateKey = keyof typeof NOTIFICATION_TEMPLATES;

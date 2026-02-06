@@ -57,7 +57,7 @@ Thank you for your payment!
 
 Your booking is confirmed. See you! 🎾`,
 
-  /** Sent 24 hours before booking (scheduled reminder). */
+  /** Sent before booking (scheduled reminder; time is configurable per schedule). */
   booking_reminder: `⏰ *RIAM Sports - Booking Reminder*
 
 This is a reminder for your upcoming booking:
@@ -70,7 +70,7 @@ This is a reminder for your upcoming booking:
 • Date: {{date}}
 • Time: {{timeslots}}
 
-See you tomorrow! 🎾
+We look forward to seeing you! 🎾
 
 For any changes or cancellations, please contact us.`,
 

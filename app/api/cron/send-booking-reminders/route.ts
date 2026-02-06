@@ -1,62 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BookingReminderService } from '@/lib/services/booking-reminders';
-import { createServiceClient } from '@/lib/supabase/server';
 
 /**
- * Cron job endpoint to send booking reminders
- * Should be called daily (e.g., via Vercel Cron, Supabase Edge Functions, or external cron service)
- * 
+ * Cron: send booking reminders for each active schedule (e.g. 1 day, 1 hour, 5 min before).
+ * Call every 5 minutes so 5-min and 1-hour windows are hit (e.g. cron-job.org or Vercel Cron).
+ *
  * Setup:
- * 1. Vercel: Add to vercel.json
- * 2. Supabase: Create Edge Function with pg_cron
- * 3. External: Use cron-job.org or similar
+ * - Vercel: add to vercel.json, schedule "*/5 * * * *" (every 5 min) or "0 * * * *" (hourly)
+ * - External: GET /api/cron/send-booking-reminders with Authorization: Bearer CRON_SECRET
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret (optional but recommended)
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const bookings = await BookingReminderService.getBookingsNeedingReminders();
-    const results = [];
+    const schedules = await BookingReminderService.getActiveReminderSchedules();
+    const results: { schedule: string; minutes_before: number; sent: number; failed: number; details: { bookingId: string; success: boolean; error?: string }[] }[] = [];
 
-    for (const booking of bookings) {
-      const result = await BookingReminderService.sendReminder(booking);
-      
-      if (result.success) {
-        const serviceClient = await createServiceClient();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (serviceClient.from('bookings') as any)
-          .update({ reminder_sent: new Date().toISOString() })
-          .eq('booking_id', booking.bookingId);
+    for (const schedule of schedules) {
+      const bookings = await BookingReminderService.getBookingsNeedingRemindersForMinutes(schedule.minutes_before);
+      const details: { bookingId: string; success: boolean; error?: string }[] = [];
+
+      for (const booking of bookings) {
+        const result = await BookingReminderService.sendReminder(booking);
+        if (result.success) {
+          await BookingReminderService.recordReminderSent(booking.bookingRowId, schedule.minutes_before);
+        }
+        details.push({
+          bookingId: booking.bookingId,
+          success: result.success,
+          error: result.error,
+        });
       }
 
       results.push({
-        bookingId: booking.bookingId,
-        success: result.success,
-        error: result.error,
+        schedule: schedule.label,
+        minutes_before: schedule.minutes_before,
+        sent: details.filter((d) => d.success).length,
+        failed: details.filter((d) => !d.success).length,
+        details,
       });
     }
 
     return NextResponse.json({
       success: true,
-      sent: results.filter((r) => r.success).length,
-      failed: results.filter((r) => !r.success).length,
       results,
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to send reminders' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to send reminders';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-
-
-
-

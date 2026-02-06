@@ -114,15 +114,18 @@ ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
 
 ## Setting Up Automated Reminders
 
+Reminders are configurable in **Admin → Reminders**: you can add multiple times (e.g. 1 day before, 1 hour before, 5 minutes before). The cron runs for each active schedule and sends WhatsApp when a booking start time falls in that window.
+
 ### Using Vercel Cron Jobs
 
-1. **Add to `vercel.json`**
+1. **Add to `vercel.json`**  
+   Call the endpoint **every 5 minutes** so that "5 min before" and "1 hour before" windows are hit:
    ```json
    {
      "crons": [
        {
          "path": "/api/cron/send-booking-reminders",
-         "schedule": "0 9 * * *"
+         "schedule": "*/5 * * * *"
        }
      ]
    }
@@ -133,17 +136,32 @@ ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
    CRON_SECRET=your_random_secret_string
    ```
 
+3. **Configure reminder times in Admin**  
+   Go to **Admin → Reminders** to add or edit schedules (e.g. "1 day before", "1 hour before", "5 minutes before"). Each schedule is sent at most once per booking. Default seed: 1 day (1440 min), 1 hour (60 min), 5 min.
+
+### Using Netlify (this project)
+
+If you deploy on **Netlify**, a scheduled function is already set up:
+
+1. **`netlify/functions/send-booking-reminders.ts`** runs **every 5 minutes** (configured in `netlify.toml`). It calls your site’s `GET /api/cron/send-booking-reminders` with `Authorization: Bearer CRON_SECRET`.
+
+2. **Set in Netlify env**
+   - `CRON_SECRET` – same secret you use to protect the cron API.
+   - `URL` is set by Netlify to your site URL; optionally set `NEXT_PUBLIC_APP_URL` if you need to override.
+
+3. After deploy, the function appears under **Netlify → Functions** with a **Scheduled** badge. You can run it once manually with **Run now** to test.
+
 ### Using External Cron Service
 
 1. **Use a service like cron-job.org**
    - URL: `https://yourdomain.com/api/cron/send-booking-reminders`
-   - Schedule: Daily at 9 AM
+   - Schedule: **Every 5 minutes** (so 5-min and 1-hour reminders work)
    - Method: GET
    - Headers: `Authorization: Bearer your_cron_secret`
 
 ### Using Supabase Edge Functions
 
-Create a Supabase Edge Function that calls the API endpoint daily.
+Create a Supabase Edge Function (or pg_cron) that calls the API endpoint every 5 minutes.
 
 ## Manual Sending
 

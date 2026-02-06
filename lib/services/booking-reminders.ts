@@ -97,15 +97,20 @@ export class BookingReminderService {
   }
 
   /**
-   * Get bookings that need reminders (24 hours before booking date)
+   * Get bookings that need a reminder for a given "minutes before" window.
+   * Booking start = booking_date + min(slots).hour. Send when that is ~minutesBefore from now.
+   * Excludes bookings that already have a reminder sent for this minutes_before.
    */
-  static async getBookingsNeedingReminders(): Promise<BookingReminderData[]> {
+  static async getBookingsNeedingRemindersForMinutes(
+    minutesBefore: number,
+    windowMinutes: number = 5
+  ): Promise<(BookingReminderData & { bookingRowId: string })[]> {
     const serviceClient = await createServiceClient();
-    
-    // Get bookings for tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowDate = format(tomorrow, 'yyyy-MM-dd');
+    const now = new Date();
+    const today = format(now, 'yyyy-MM-dd');
+    const maxDate = new Date(now);
+    maxDate.setDate(maxDate.getDate() + 3);
+    const maxDateStr = format(maxDate, 'yyyy-MM-dd');
 
     const { data: bookings, error } = await serviceClient
       .from('bookings')
@@ -114,7 +119,6 @@ export class BookingReminderService {
         booking_id,
         booking_date,
         total_amount,
-        reminder_sent,
         user:profiles!bookings_user_id_fkey(
           full_name,
           mobile_number
@@ -126,29 +130,66 @@ export class BookingReminderService {
         ),
         slots:booking_slots(hour)
       `)
-      .eq('booking_date', tomorrowDate)
-      .eq('booking_status', 'confirmed')
-      .is('reminder_sent', null);
+      .gte('booking_date', today)
+      .lte('booking_date', maxDateStr)
+      .eq('booking_status', 'confirmed');
 
-    if (error || !bookings) {
-      return [];
+    if (error || !bookings?.length) return [];
+
+    const { data: sentRows } = await (serviceClient.from('booking_reminders_sent') as any)
+      .select('booking_id')
+      .eq('minutes_before', minutesBefore);
+    const sentBookingIds = new Set((sentRows ?? []).map((r: { booking_id: string }) => r.booking_id));
+
+    const minMs = (minutesBefore - windowMinutes) * 60 * 1000;
+    const maxMs = (minutesBefore + windowMinutes) * 60 * 1000;
+    const result: (BookingReminderData & { bookingRowId: string })[] = [];
+
+    for (const b of bookings as any[]) {
+      if (!b.user?.mobile_number || sentBookingIds.has(b.id)) continue;
+      const slots = b.slots ?? [];
+      const minHour = slots.length ? Math.min(...slots.map((s: { hour: number }) => s.hour)) : 0;
+      const startStr = `${b.booking_date}T${String(minHour).padStart(2, '0')}:00:00`;
+      const bookingStart = new Date(startStr);
+      const diffMs = bookingStart.getTime() - now.getTime();
+      if (diffMs < minMs || diffMs > maxMs) continue;
+      result.push({
+        bookingRowId: b.id,
+        bookingId: b.booking_id,
+        bookingDate: b.booking_date,
+        timeSlots: slots.map((s: { hour: number }) => `${String(s.hour).padStart(2, '0')}:00`).sort(),
+        location: b.turf?.location?.name || '',
+        service: b.turf?.service?.name || '',
+        turf: b.turf?.name || '',
+        customerName: b.user?.full_name || 'Customer',
+        customerPhone: b.user?.mobile_number || '',
+        totalAmount: b.total_amount,
+      });
     }
+    return result;
+  }
 
-    return bookings
-      .filter((booking: any) => booking.user?.mobile_number)
-      .map((booking: any) => ({
-        bookingId: booking.booking_id,
-        bookingDate: booking.booking_date,
-        timeSlots: booking.slots
-          .map((slot: any) => `${String(slot.hour).padStart(2, '0')}:00`)
-          .sort(),
-        location: booking.turf?.location?.name || '',
-        service: booking.turf?.service?.name || '',
-        turf: booking.turf?.name || '',
-        customerName: booking.user?.full_name || 'Customer',
-        customerPhone: booking.user?.mobile_number || '',
-        totalAmount: booking.total_amount,
-      }));
+  /**
+   * Record that a reminder was sent for a booking at this "minutes before" slot.
+   */
+  static async recordReminderSent(bookingRowId: string, minutesBefore: number): Promise<void> {
+    const serviceClient = await createServiceClient();
+    await (serviceClient.from('booking_reminders_sent') as any).insert({
+      booking_id: bookingRowId,
+      minutes_before: minutesBefore,
+    });
+  }
+
+  /**
+   * Get active reminder schedules from DB (for cron).
+   */
+  static async getActiveReminderSchedules(): Promise<{ id: string; minutes_before: number; label: string }[]> {
+    const serviceClient = await createServiceClient();
+    const { data } = await (serviceClient.from('reminder_schedules') as any)
+      .select('id, minutes_before, label')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    return (data ?? []) as { id: string; minutes_before: number; label: string }[];
   }
 
   /**

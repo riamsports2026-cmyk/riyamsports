@@ -8,3 +8,7 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Booking reminders: run every 5 minutes (calls Next.js API /api/cron/send-booking-reminders)
+[functions."send-booking-reminders"]
+  schedule = "*/5 * * * *"

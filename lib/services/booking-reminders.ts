@@ -227,9 +227,12 @@ export class BookingReminderService {
 
   /**
    * Send welcome WhatsApp when user first adds mobile (complete profile / new account).
-   * Dashboard template: 1 body param {{1}} with the full welcome message.
+   * Only sends if ASKEVA_TEMPLATE_WELCOME is set (create a template with 1 body param {{1}} in your dashboard).
    */
   static async sendWelcome(customerPhone: string, customerName: string): Promise<{ success: boolean; error?: string }> {
+    if (!process.env.ASKEVA_TEMPLATE_WELCOME) {
+      return { success: true }; // skip if no welcome template configured (avoids "Template is not valid" API error)
+    }
     const message = getRenderedTemplate('welcome', { customername: customerName || 'there' });
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(customerPhone),

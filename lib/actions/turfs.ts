@@ -90,25 +90,9 @@ export async function getAvailableSlots(
 
   const allHours = rows.filter((p) => p.price > 0).map((p) => p.hour);
 
-  // Filter out past hours if booking date is today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const bookingDate = new Date(date);
-  bookingDate.setHours(0, 0, 0, 0);
-  const isToday = bookingDate.getTime() === today.getTime();
-  
-  let availableHours = allHours.filter(hour => !bookedHours.has(hour));
-  
-  if (isToday) {
-    const now = new Date();
-    const currentHour = now.getHours();
-    
-    // Filter out hours that have already passed
-    // Allow any hour that is greater than the current hour
-    // This means if it's 11:04 AM (hour 11), hour 12 (12 PM) will be available
-    availableHours = availableHours.filter(hour => hour > currentHour);
-  }
-
+  // Return all unbooked hours that have pricing. Past-hour filtering for "today"
+  // is done on the client so the user's local timezone is used (server may be UTC).
+  const availableHours = allHours.filter((hour) => !bookedHours.has(hour));
   return availableHours;
 }
 

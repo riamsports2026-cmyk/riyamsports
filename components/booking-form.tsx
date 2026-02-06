@@ -155,17 +155,17 @@ export function BookingForm({ turf, location, service }: BookingFormProps) {
                     const price = priceData?.price || 0;
                     const hasPricing = priceData !== undefined;
                     
-                    // Check if this is a past hour for today's date
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const bookingDate = new Date(selectedDate);
-                    bookingDate.setHours(0, 0, 0, 0);
-                    const isToday = bookingDate.getTime() === today.getTime();
-                    
-                    // If it's today, only allow hours greater than current hour
-                    // This means if it's 11:04 AM (hour 11), hour 12 (12 PM) will be available
-                    const isPastHour = isToday && hour <= new Date().getHours();
-                    
+                    // Past hour check: use local date and local time only (client = user timezone)
+                    const now = new Date();
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const selectedStart = new Date(selectedDate + 'T00:00:00');
+                    const isToday =
+                      selectedStart.getFullYear() === todayStart.getFullYear() &&
+                      selectedStart.getMonth() === todayStart.getMonth() &&
+                      selectedStart.getDate() === todayStart.getDate();
+                    // If it's today, slot is past when its hour has started (hour <= current hour)
+                    const isPastHour = isToday && hour <= now.getHours();
+
                     const isDisabled = !isAvailable || price === 0 || isPastHour;
 
                     return (
@@ -176,7 +176,7 @@ export function BookingForm({ turf, location, service }: BookingFormProps) {
                         disabled={isDisabled}
                         className={`relative px-2.5 py-2.5 sm:px-3 sm:py-3 md:px-4 md:py-4 rounded-lg sm:rounded-xl border-2 transition-all duration-200 transform min-h-[70px] sm:min-h-[80px] md:min-h-[90px] flex flex-col items-center justify-center ${
                           isDisabled
-                            ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
+                            ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed pointer-events-none opacity-60 select-none'
                             : isSelected
                             ? 'bg-linear-to-br from-[#FF6B35] to-[#FF8C61] text-white border-[#FF6B35] shadow-xl shadow-[#FF6B35]/40 scale-105 ring-2 sm:ring-4 ring-[#FF6B35]/20 cursor-pointer active:scale-95'
                             : 'bg-white text-[#1E3A5F] border-[#1E3A5F]/30 hover:border-[#FF6B35] hover:bg-linear-to-br hover:from-[#FF6B35]/10 hover:to-[#1E3A5F]/10 hover:shadow-lg active:scale-95 cursor-pointer'

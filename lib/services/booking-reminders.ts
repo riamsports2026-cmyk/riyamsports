@@ -58,37 +58,59 @@ export class BookingReminderService {
   }
 
   /**
-   * Send booking reminder 24 hours before (scheduled; dynamic template)
+   * Send booking reminder (scheduled). Same variables as notification-templates.ts: 6 params – bookingid, location, service, turf, date, timeslots.
    */
   static async sendReminder(data: BookingReminderData): Promise<{ success: boolean; error?: string }> {
-    const message = getRenderedTemplate('booking_reminder', buildTemplateContext(data));
+    const formattedDate = format(new Date(data.bookingDate), 'dd MMM yyyy');
+    const timeSlotsStr = data.timeSlots.join(', ');
+    const templateName = WhatsAppService.getTemplateNameFor('booking_reminder');
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
-      message,
-      askevaTemplateName: WhatsAppService.getTemplateNameFor('booking_reminder'),
+      message: '',
+      template: templateName,
+      variables: {
+        _paramOrder: '1,2,3,4,5,6',
+        '1': data.bookingId,
+        '2': data.location,
+        '3': data.service,
+        '4': data.turf,
+        '5': formattedDate,
+        '6': timeSlotsStr,
+      },
+      askevaTemplateName: templateName,
     });
   }
 
   /**
-   * Send payment success notification (dynamic template)
+   * Send payment success. Same as notification-templates.ts: 8 params – bookingid, location, service, turf, date, timeslots, amountpaid, totalamount.
    */
   static async sendPaymentSuccess(
     data: BookingReminderData & { amountPaid: number }
   ): Promise<{ success: boolean; error?: string }> {
-    const message = getRenderedTemplate('payment_success', {
-      ...buildTemplateContext(data),
-      amount_paid: data.amountPaid,
-    });
+    const formattedDate = format(new Date(data.bookingDate), 'dd MMM yyyy');
+    const timeSlotsStr = data.timeSlots.join(', ');
+    const templateName = WhatsAppService.getTemplateNameFor('payment_success');
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
-      message,
-      askevaTemplateName: WhatsAppService.getTemplateNameFor('payment_success'),
+      message: '',
+      template: templateName,
+      variables: {
+        _paramOrder: '1,2,3,4,5,6,7,8',
+        '1': data.bookingId,
+        '2': data.location,
+        '3': data.service,
+        '4': data.turf,
+        '5': formattedDate,
+        '6': timeSlotsStr,
+        '7': String(data.amountPaid),
+        '8': String(data.totalAmount),
+      },
+      askevaTemplateName: templateName,
     });
   }
 
   /**
-   * Send payment reminder (dynamic template).
-   * Pass bookingRowId (uuid) for payment_url; otherwise falls back to bookingId.
+   * Send payment reminder. Same as notification-templates.ts: 5 params – bookingid, date, location, amountdue, paymenturl.
    */
   static async sendPaymentReminder(
     data: BookingReminderData & { paymentAmount: number; bookingRowId?: string }
@@ -97,15 +119,21 @@ export class BookingReminderService {
     const paymentUrl = data.bookingRowId
       ? `${base}/bookings/${data.bookingRowId}/payment`
       : `${base}/bookings/${data.bookingId}/payment`;
-    const message = getRenderedTemplate('payment_reminder', {
-      ...buildTemplateContext(data),
-      amountdue: data.paymentAmount,
-      paymenturl: paymentUrl,
-    });
+    const formattedDate = format(new Date(data.bookingDate), 'dd MMM yyyy');
+    const templateName = WhatsAppService.getTemplateNameFor('payment_reminder');
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
-      message,
-      askevaTemplateName: WhatsAppService.getTemplateNameFor('payment_reminder'),
+      message: '',
+      template: templateName,
+      variables: {
+        _paramOrder: '1,2,3,4,5',
+        '1': data.bookingId,
+        '2': formattedDate,
+        '3': data.location,
+        '4': String(data.paymentAmount),
+        '5': paymentUrl,
+      },
+      askevaTemplateName: templateName,
     });
   }
 

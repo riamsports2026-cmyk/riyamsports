@@ -247,6 +247,21 @@ Accepted formats:
 
 The service normalizes to a consistent format (e.g. `+91` + 10 digits) before saving or sending.
 
+## Troubleshooting: Not receiving WhatsApp messages
+
+If you cancel a booking (or create one, pay, etc.) but no WhatsApp is received:
+
+1. **Check server logs** (terminal when running `npm run dev`, or Vercel/Netlify function logs). You should see one of:
+   - `[WhatsApp] ASKEVA_API_TOKEN is not set` → Add `ASKEVA_API_TOKEN` to your `.env`.
+   - `[WhatsApp] Cancellation not sent: customer has no mobile_number in profile` → The customer’s profile has no phone number. They must add it in Profile or Complete Profile (or you add it in Admin).
+   - `[WhatsApp] API error 401 ...` or `[WhatsApp] Send failed: ...` → Token wrong, or `WHATSAPP_API_URL` wrong, or API returned an error (check the logged message).
+
+2. **Ensure the customer has a mobile number** in **Profile** (or **Complete profile**). The app sends to `profiles.mobile_number` for the booking’s user.
+
+3. **Env vars:** `ASKEVA_API_TOKEN` is required. `WHATSAPP_API_URL` is optional (default `https://wpapi.propluslogics.com/v1`). Use the same URL and token your WhatsApp provider (e.g. ProPlus Logics) gave you.
+
+4. **Cancel a test booking** and watch the terminal; you should see either no error (message sent) or a clear `[WhatsApp] ...` error line.
+
 ## Cost Considerations
 
 Check AskEva pricing for WhatsApp message/conversation costs.

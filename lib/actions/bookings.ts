@@ -147,8 +147,14 @@ export async function cancelBooking(bookingId: string) {
     return { error: error.message || 'Failed to cancel booking' };
   }
 
-  // WhatsApp cancellation notification (fire-and-forget)
-  BookingReminderService.sendCancellationByBookingId(bookingId).catch(() => {});
+  // WhatsApp cancellation notification (log failure so you can see why message wasn't sent)
+  BookingReminderService.sendCancellationByBookingId(bookingId).then((res) => {
+    if (res?.error) {
+      console.error('[WhatsApp] Cancellation send failed:', res.error);
+    }
+  }).catch((err) => {
+    console.error('[WhatsApp] Cancellation send error:', err instanceof Error ? err.message : err);
+  });
 
   revalidatePath('/bookings');
   revalidatePath(`/bookings/${bookingId}`);

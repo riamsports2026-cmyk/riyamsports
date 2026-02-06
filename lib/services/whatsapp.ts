@@ -22,17 +22,21 @@ function sanitizeAskEvaTemplateName(name: string): string {
 }
 
 /**
- * AskEva: variable content cannot contain special characters (dashboard rule).
- * Strip emojis and replace symbols so the message is safe for {{1}}.
+ * WhatsApp API: param text cannot have newlines, tabs, or more than 4 consecutive spaces.
+ * Also strip emojis/symbols for template variable safety.
  */
 function sanitizeAskEvaMessageText(text: string): string {
   return text
+    .replace(/\r\n|\r|\n/g, ' ') // newlines → space (API rejects new-line in param)
+    .replace(/\t/g, ' ') // tabs → space (API rejects tab)
+    .replace(/ {5,}/g, '    ') // more than 4 consecutive spaces → 4 spaces (API rule)
     .replace(/[\u200B-\u200D\uFEFF]/g, '') // zero-width and BOM
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // control chars; keep \n \t \r
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // control chars
     .replace(/\*/g, '') // asterisk (bold in WhatsApp) – remove
     .replace(/•/g, '- ') // bullet
     .replace(/₹/g, 'Rs ') // rupee
-    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F910}-\u{1F92F}\u{1F3C0}-\u{1F3FF}\u{1F400}-\u{1F4FF}]/gu, ''); // emojis (sports, symbols, smileys, etc.)
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F910}-\u{1F92F}\u{1F3C0}-\u{1F3FF}\u{1F400}-\u{1F4FF}]/gu, '') // emojis
+    .trim();
 }
 
 /**
@@ -49,6 +53,7 @@ export class WhatsAppService {
   static async sendViaAskEva(message: WhatsAppMessage): Promise<{ success: boolean; error?: string }> {
     const token = process.env.ASKEVA_API_TOKEN;
     if (!token) {
+      console.error('[WhatsApp] ASKEVA_API_TOKEN is not set. Set it in .env to send messages.');
       return { success: false, error: 'AskEva API token not configured (ASKEVA_API_TOKEN)' };
     }
 
@@ -121,11 +126,13 @@ export class WhatsAppService {
 
       if (!response.ok) {
         const errMsg = (data as { message?: string })?.message ?? (data as { error?: string })?.error ?? response.statusText;
+        console.error('[WhatsApp] API error', response.status, errMsg, data);
         return { success: false, error: errMsg || 'AskEva send failed' };
       }
       return { success: true };
     } catch (error: unknown) {
       const err = error instanceof Error ? error.message : 'Failed to send WhatsApp message via AskEva';
+      console.error('[WhatsApp] Send failed:', err);
       return { success: false, error: err };
     }
   }

@@ -33,14 +33,27 @@ function buildTemplateContext(data: BookingReminderData, extra: Record<string, s
 
 export class BookingReminderService {
   /**
-   * Send booking confirmation (dynamic template)
+   * Send booking confirmation. Template expects 7 params: bookingid, location, service, turf, date, timeslots, totalamount.
    */
   static async sendConfirmationReminder(data: BookingReminderData): Promise<{ success: boolean; error?: string }> {
-    const message = getRenderedTemplate('booking_confirmation', buildTemplateContext(data));
+    const formattedDate = format(new Date(data.bookingDate), 'dd MMM yyyy');
+    const timeSlotsStr = data.timeSlots.join(', ');
+    const templateName = WhatsAppService.getTemplateNameFor('booking_confirmation');
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
-      message,
-      askevaTemplateName: WhatsAppService.getTemplateNameFor('booking_confirmation'),
+      message: '',
+      template: templateName,
+      variables: {
+        _paramOrder: '1,2,3,4,5,6,7',
+        '1': data.bookingId,
+        '2': data.location,
+        '3': data.service,
+        '4': data.turf,
+        '5': formattedDate,
+        '6': timeSlotsStr,
+        '7': String(data.totalAmount),
+      },
+      askevaTemplateName: templateName,
     });
   }
 
@@ -97,14 +110,26 @@ export class BookingReminderService {
   }
 
   /**
-   * Send booking cancellation notification (dynamic template).
+   * Send booking cancellation notification. Template expects 6 params: bookingid, location, service, turf, date, timeslots.
    */
   static async sendCancellation(data: BookingReminderData): Promise<{ success: boolean; error?: string }> {
-    const message = getRenderedTemplate('booking_cancellation', buildTemplateContext(data));
+    const formattedDate = format(new Date(data.bookingDate), 'dd MMM yyyy');
+    const timeSlotsStr = data.timeSlots.join(', ');
+    const templateName = WhatsAppService.getTemplateNameFor('booking_cancellation');
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),
-      message,
-      askevaTemplateName: WhatsAppService.getTemplateNameFor('booking_cancellation'),
+      message: '',
+      template: templateName,
+      variables: {
+        _paramOrder: '1,2,3,4,5,6',
+        '1': data.bookingId,
+        '2': data.location,
+        '3': data.service,
+        '4': data.turf,
+        '5': formattedDate,
+        '6': timeSlotsStr,
+      },
+      askevaTemplateName: templateName,
     });
   }
 
@@ -113,13 +138,14 @@ export class BookingReminderService {
    */
   static async sendCancellationByBookingId(bookingRowId: string): Promise<{ success: boolean; error?: string }> {
     const serviceClient = await createServiceClient();
+    // Don't join profiles here: bookings_user_id_fkey points to auth.users, not profiles. Query booking + profile separately.
     const { data: booking, error } = await serviceClient
       .from('bookings')
       .select(`
         booking_id,
         booking_date,
         total_amount,
-        user:profiles!bookings_user_id_fkey(full_name, mobile_number),
+        user_id,
         turf:turfs(
           name,
           location:locations(name),
@@ -131,11 +157,27 @@ export class BookingReminderService {
       .single();
 
     if (error || !booking) {
+      console.error('[WhatsApp] Cancellation: booking fetch failed', { bookingRowId, supabaseError: error });
       return { success: false, error: 'Booking not found' };
     }
 
     const b = booking as any;
-    if (!b.user?.mobile_number) {
+    const userId = b.user_id as string | undefined;
+    if (!userId) {
+      return { success: false, error: 'Booking has no user_id' };
+    }
+
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('full_name, mobile_number')
+      .eq('id', userId)
+      .maybeSingle();
+    const p = profile as { full_name?: string | null; mobile_number?: string | null } | null;
+    const customerPhone = p?.mobile_number ?? undefined;
+    const customerName = p?.full_name ?? 'Customer';
+
+    if (!customerPhone) {
+      console.error('[WhatsApp] Cancellation not sent: customer has no mobile_number in profile (booking id:', bookingRowId, ')');
       return { success: false, error: 'Customer phone number not found' };
     }
 
@@ -148,8 +190,8 @@ export class BookingReminderService {
       location: b.turf?.location?.name || '',
       service: b.turf?.service?.name || '',
       turf: b.turf?.name || '',
-      customerName: b.user?.full_name || 'Customer',
-      customerPhone: b.user?.mobile_number || '',
+      customerName,
+      customerPhone,
       totalAmount: Number(b.total_amount),
     };
     return this.sendCancellation(data);

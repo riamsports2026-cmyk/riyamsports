@@ -180,10 +180,14 @@ export async function updateBookingStatus(
     return { error: error.message };
   }
 
-  // WhatsApp cancellation notification when status set to cancelled
+  // WhatsApp cancellation notification when status set to cancelled (log failure)
   if (status === 'cancelled') {
     const { BookingReminderService } = await import('@/lib/services/booking-reminders');
-    BookingReminderService.sendCancellationByBookingId(bookingId).catch(() => {});
+    BookingReminderService.sendCancellationByBookingId(bookingId).then((res) => {
+      if (res?.error) console.error('[WhatsApp] Cancellation send failed:', res.error);
+    }).catch((err) => {
+      console.error('[WhatsApp] Cancellation send error:', err instanceof Error ? err.message : err);
+    });
   }
 
   return { success: true };

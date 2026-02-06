@@ -38,6 +38,74 @@ WhatsApp notifications use the **AskEva Consumer API** only. Messages are sent a
    ```
    If a per-type variable is missing, the app falls back to `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`, then `postman_textvariable`.
 
+---
+
+### AskEva dashboard – template structure (create these in AskEva)
+
+Create templates in the AskEva dashboard (or Meta WhatsApp Manager). Each template needs **one body variable** `{{1}}`. The app sends the full message text as that variable.
+
+**AskEva rules:**
+- **Template name:** Use only **letters, numbers, and underscores** (no spaces, hyphens, or special characters). Example: `riamsports_booking_confirmation`.
+- **Variable content:** In the dashboard you cannot use special characters in the variable (or in the sample for `{{1}}`). Use only letters, numbers, spaces, and basic punctuation. The app automatically strips emojis and symbols (₹ → "Rs ", • → "- ", * removed) from the message before sending, so it fits this rule.
+
+**Option 1 – One template for all notifications**
+
+| Field | Value |
+|-------|--------|
+| **Template name** | `riamsports_message` (or any name you like) |
+| **Language** | English (`en`) |
+| **Body** | `{{1}}` |
+| **Sample for {{1}}** | `Your booking is confirmed. ID: BK123. Date: 15 Jan 2025.` |
+
+Then set only: `ASKEVA_DEFAULT_MESSAGE_TEMPLATE=riamsports_message`
+
+---
+
+**Option 2 – Four templates (one per notification type)**
+
+Use this **exact structure** when creating each template:
+
+| # | Template name (use in env) | Language | Body text | When it's used |
+|---|----------------------------|----------|-----------|-----------------|
+| 1 | `riamsports_booking_confirmation` | English (en) | See below | After customer creates a booking |
+| 2 | `riamsports_payment_success`      | English (en) | See below | After payment is successful |
+| 3 | `riamsports_booking_reminder`    | English (en) | See below | 24 hours before booking |
+| 4 | `riamsports_payment_reminder`    | English (en) | See below | When you send a payment reminder |
+
+**Body text for each template:** use exactly **one variable** `{{1}}`. The app will replace it with the full message.
+
+- **Option A (recommended):** Body = `{{1}}`  
+  (The entire message is dynamic; our app sends the full formatted text here.)
+
+- **Option B:** If the dashboard requires static text, use:  
+  `RIAM Sports: {{1}}`  
+  (Our app still sends the full message; it will appear after "RIAM Sports: ".)
+
+**Sample value for approval (use when AskEva/Meta asks for a sample for `{{1}}`):**  
+Use only letters, numbers, spaces, and basic punctuation (no emojis, no ₹, no •). Example:
+
+```
+Booking confirmed. ID: BK123. Date: 15 Jan 2025. Location: Main Turf. Amount: Rs 500.
+```
+
+**Example of what the app sends in `{{1}}` for each type:**
+
+1. **Booking confirmation** – multi-line with booking ID, location, service, turf, date, time, amount.
+2. **Payment success** – thank you + booking details + amount paid and total.
+3. **Booking reminder** – reminder text + booking details (no amount).
+4. **Payment reminder** – pending payment + booking ID, date, location, amount due + payment link.
+
+After creating the templates, set in your env (names must match exactly):
+
+```env
+ASKEVA_TEMPLATE_BOOKING_CONFIRMATION=riamsports_booking_confirmation
+ASKEVA_TEMPLATE_PAYMENT_SUCCESS=riamsports_payment_success
+ASKEVA_TEMPLATE_BOOKING_REMINDER=riamsports_booking_reminder
+ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
+```
+
+---
+
 4. **API details (for reference)**
    - Base URL: `https://backend.askeva.io/v1`
    - Send message: `POST /v1/message/send-message?token=YOUR_TOKEN`
@@ -124,7 +192,7 @@ WHERE reminder_sent IS NULL;
 
 ## Message Templates
 
-Templates are defined in `lib/services/notification-templates.ts` with placeholders like `{{booking_id}}`, `{{date}}`, `{{time_slots}}`, `{{location}}`, `{{amount_paid}}`, etc. The system sends:
+Templates are defined in `lib/services/notification-templates.ts` with placeholders like `{{bookingid}}`, `{{date}}`, `{{timeslots}}`, `{{location}}`, `{{amountpaid}}`, `{{paymenturl}}` (letters/numbers only, no underscores or special chars for AskEva compatibility). The system sends:
 
 1. **Booking Confirmation** – After booking creation (with payment link if pending)
 2. **Payment Success** – When payment is captured (webhook)

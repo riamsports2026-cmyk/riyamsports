@@ -1,6 +1,7 @@
 /**
  * Dynamic message templates for WhatsApp notifications.
  * Placeholders: {{key}} replaced with values from context.
+ * Use only letters and numbers in placeholder names (no underscores/special chars) for AskEva compatibility.
  */
 
 export type TemplateContext = Record<string, string | number | undefined>;
@@ -27,13 +28,13 @@ export const NOTIFICATION_TEMPLATES = {
 Your booking has been confirmed!
 
 📋 *Booking Details:*
-• Booking ID: {{booking_id}}
+• Booking ID: {{bookingid}}
 • Location: {{location}}
 • Service: {{service}}
 • Turf: {{turf}}
 • Date: {{date}}
-• Time: {{time_slots}}
-• Amount: ₹{{total_amount}}
+• Time: {{timeslots}}
+• Amount: ₹{{totalamount}}
 
 We look forward to seeing you! 🎾
 
@@ -45,14 +46,14 @@ For any queries, please contact us.`,
 Thank you for your payment!
 
 📋 *Booking Details:*
-• Booking ID: {{booking_id}}
+• Booking ID: {{bookingid}}
 • Location: {{location}}
 • Service: {{service}}
 • Turf: {{turf}}
 • Date: {{date}}
-• Time: {{time_slots}}
-• Amount Paid: ₹{{amount_paid}}
-• Total: ₹{{total_amount}}
+• Time: {{timeslots}}
+• Amount Paid: ₹{{amountpaid}}
+• Total: ₹{{totalamount}}
 
 Your booking is confirmed. See you! 🎾`,
 
@@ -62,12 +63,12 @@ Your booking is confirmed. See you! 🎾`,
 This is a reminder for your upcoming booking:
 
 📋 *Booking Details:*
-• Booking ID: {{booking_id}}
+• Booking ID: {{bookingid}}
 • Location: {{location}}
 • Service: {{service}}
 • Turf: {{turf}}
 • Date: {{date}}
-• Time: {{time_slots}}
+• Time: {{timeslots}}
 
 See you tomorrow! 🎾
 
@@ -79,14 +80,14 @@ For any changes or cancellations, please contact us.`,
 Your booking payment is pending:
 
 📋 *Booking Details:*
-• Booking ID: {{booking_id}}
+• Booking ID: {{bookingid}}
 • Date: {{date}}
 • Location: {{location}}
-• Amount Due: ₹{{amount_due}}
+• Amount Due: ₹{{amountdue}}
 
 Please complete the payment to confirm your booking.
 
-Pay now: {{payment_url}}`,
+Pay now: {{paymenturl}}`,
 } as const;
 
 export type TemplateKey = keyof typeof NOTIFICATION_TEMPLATES;

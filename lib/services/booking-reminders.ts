@@ -19,14 +19,14 @@ function buildTemplateContext(data: BookingReminderData, extra: Record<string, s
   const formattedDate = format(new Date(data.bookingDate), 'dd MMM yyyy');
   const timeSlots = data.timeSlots.join(', ');
   return {
-    booking_id: data.bookingId,
+    bookingid: data.bookingId,
     date: formattedDate,
-    time_slots: timeSlots,
+    timeslots: timeSlots,
     location: data.location,
     service: data.service,
     turf: data.turf,
-    total_amount: data.totalAmount,
-    customer_name: data.customerName,
+    totalamount: data.totalAmount,
+    customername: data.customerName,
     ...extra,
   };
 }
@@ -86,8 +86,8 @@ export class BookingReminderService {
       : `${base}/bookings/${data.bookingId}/payment`;
     const message = getRenderedTemplate('payment_reminder', {
       ...buildTemplateContext(data),
-      amount_due: data.paymentAmount,
-      payment_url: paymentUrl,
+      amountdue: data.paymentAmount,
+      paymenturl: paymentUrl,
     });
     return WhatsAppService.send({
       to: WhatsAppService.formatPhoneNumber(data.customerPhone),

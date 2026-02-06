@@ -15,6 +15,25 @@ export interface WhatsAppMessage {
   askevaTemplateName?: string;
 }
 
+/** AskEva: allow only alphanumeric and underscore in template names (no special characters). */
+function sanitizeAskEvaTemplateName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_]/g, '');
+}
+
+/**
+ * AskEva: variable content cannot contain special characters (dashboard rule).
+ * Strip emojis and replace symbols so the message is safe for {{1}}.
+ */
+function sanitizeAskEvaMessageText(text: string): string {
+  return text
+    .replace(/[\u200B-\u200D\uFEFF]/g, '') // zero-width and BOM
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // control chars; keep \n \t \r
+    .replace(/\*/g, '') // asterisk (bold in WhatsApp) – remove
+    .replace(/•/g, '- ') // bullet
+    .replace(/₹/g, 'Rs ') // rupee
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F910}-\u{1F92F}\u{1F3C0}-\u{1F3FF}\u{1F400}-\u{1F4FF}]/gu, ''); // emojis (sports, symbols, smileys, etc.)
+}
+
 /**
  * WhatsApp via AskEva Consumer API only.
  * Uses template messages. For plain text, use ASKEVA_DEFAULT_MESSAGE_TEMPLATE
@@ -33,10 +52,11 @@ export class WhatsAppService {
     }
 
     const to = message.to.replace(/\D/g, ''); // digits only, no +
-    const defaultTemplate =
+    const rawTemplateName =
       message.askevaTemplateName ||
       process.env.ASKEVA_DEFAULT_MESSAGE_TEMPLATE ||
       'postman_textvariable';
+    const defaultTemplate = sanitizeAskEvaTemplateName(rawTemplateName) || 'postman_textvariable';
 
     let body: {
       to: string;
@@ -57,14 +77,14 @@ export class WhatsAppService {
         : Object.keys(message.variables).filter((k) => k !== '_paramOrder');
       const params = paramOrder.map((key) => ({
         type: 'text' as const,
-        text: message.variables![key] ?? '',
+        text: sanitizeAskEvaMessageText(String(message.variables![key] ?? '')),
       }));
       body = {
         to,
         type: 'template',
         template: {
           language: { policy: 'deterministic', code: 'en' },
-          name: message.template,
+          name: sanitizeAskEvaTemplateName(message.template),
           components: [{ type: 'body', parameters: params }],
         },
       };
@@ -78,7 +98,7 @@ export class WhatsAppService {
           components: [
             {
               type: 'body',
-              parameters: [{ type: 'text', text: message.message }],
+              parameters: [{ type: 'text', text: sanitizeAskEvaMessageText(message.message) }],
             },
           ],
         },

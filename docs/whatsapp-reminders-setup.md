@@ -26,8 +26,10 @@ WhatsApp notifications use the **AskEva Consumer API** only. Messages are sent a
 3. **Add to Environment Variables**
    ```env
    ASKEVA_API_TOKEN=your_api_key_from_dashboard
+   WHATSAPP_API_URL=https://wpapi.propluslogics.com/v1
    ASKEVA_DEFAULT_MESSAGE_TEMPLATE=riamsports_message
    ```
+   - **WHATSAPP_API_URL** (optional): API base URL. Default is `https://wpapi.propluslogics.com/v1`. Send endpoint is `{WHATSAPP_API_URL}/message/send-message`.
    - **One template for all:** Set only `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`; every notification uses it (message text in the single body variable).
    - **Different template per notification (recommended):** Create five templates in AskEva (each with one body variable `{{1}}`) and set:
    ```env
@@ -111,10 +113,9 @@ ASKEVA_TEMPLATE_BOOKING_CANCELLATION=riamsports_booking_cancellation
 ---
 
 4. **API details (for reference)**
-   - Base URL: `https://backend.askeva.io/v1`
-   - Send message: `POST /v1/message/send-message?token=YOUR_TOKEN`
+   - Default base URL: `https://wpapi.propluslogics.com/v1` (override with `WHATSAPP_API_URL`).
+   - Send message: `POST {base}/message/send-message?token=YOUR_TOKEN`
    - Body: `{ "to": "919876543210", "type": "template", "template": { "language": { "policy": "deterministic", "code": "en" }, "name": "...", "components": [ { "type": "body", "parameters": [ { "type": "text", "text": "..." } ] } ] } }`
-   - Get templates: `GET https://backend.askeva.io/v1/templates?token=YOUR_TOKEN`
 
 ## Setting Up Automated Reminders
 

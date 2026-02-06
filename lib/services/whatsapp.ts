@@ -107,7 +107,10 @@ export class WhatsAppService {
     }
 
     try {
-      const url = `https://backend.askeva.io/v1/message/send-message?token=${encodeURIComponent(token)}`;
+      // WHATSAPP_API_URL: full endpoint (e.g. https://wpapi.propluslogics.com/v1/message/send-message) or base (e.g. https://wpapi.propluslogics.com/v1)
+      const base = (process.env.WHATSAPP_API_URL ?? 'https://wpapi.propluslogics.com/v1').replace(/\/$/, '');
+      const endpoint = base.includes('/message/') ? base : `${base}/message/send-message`;
+      const url = `${endpoint}?token=${encodeURIComponent(token)}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

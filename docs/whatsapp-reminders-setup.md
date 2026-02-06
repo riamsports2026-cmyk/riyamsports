@@ -38,7 +38,9 @@ WhatsApp notifications use the **AskEva Consumer API** only. Messages are sent a
    ASKEVA_TEMPLATE_BOOKING_REMINDER=riamsports_booking_reminder
    ASKEVA_TEMPLATE_PAYMENT_REMINDER=riamsports_payment_reminder
    ASKEVA_TEMPLATE_BOOKING_CANCELLATION=riamsports_booking_cancellation
+   ASKEVA_TEMPLATE_WELCOME=riamsports_welcome
    ```
+   **Welcome** is sent when a user first adds their mobile (complete profile or profile update). Template: 1 body param `{{1}}` with the full welcome message.
    If a per-type variable is missing, the app falls back to `ASKEVA_DEFAULT_MESSAGE_TEMPLATE`, then `postman_textvariable`.
 
 ---

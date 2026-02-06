@@ -226,6 +226,76 @@ export class BookingReminderService {
   }
 
   /**
+   * Send welcome WhatsApp when user first adds mobile (complete profile / new account).
+   * Dashboard template: 1 body param {{1}} with the full welcome message.
+   */
+  static async sendWelcome(customerPhone: string, customerName: string): Promise<{ success: boolean; error?: string }> {
+    const message = getRenderedTemplate('welcome', { customername: customerName || 'there' });
+    return WhatsAppService.send({
+      to: WhatsAppService.formatPhoneNumber(customerPhone),
+      message,
+      askevaTemplateName: WhatsAppService.getTemplateNameFor('welcome'),
+    });
+  }
+
+  /**
+   * Fetch booking details and send confirmation notification (e.g. when admin/staff set status to confirmed).
+   */
+  static async sendConfirmationByBookingId(bookingRowId: string): Promise<{ success: boolean; error?: string }> {
+    const serviceClient = await createServiceClient();
+    const { data: booking, error } = await serviceClient
+      .from('bookings')
+      .select(`
+        booking_id,
+        booking_date,
+        total_amount,
+        user_id,
+        turf:turfs(
+          name,
+          location:locations(name),
+          service:services(name)
+        ),
+        slots:booking_slots(hour)
+      `)
+      .eq('id', bookingRowId)
+      .single();
+
+    if (error || !booking) {
+      return { success: false, error: 'Booking not found' };
+    }
+
+    const b = booking as any;
+    const userId = b.user_id as string | undefined;
+    if (!userId) return { success: false, error: 'Booking has no user_id' };
+
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('full_name, mobile_number')
+      .eq('id', userId)
+      .maybeSingle();
+    const p = profile as { full_name?: string | null; mobile_number?: string | null } | null;
+    const customerPhone = p?.mobile_number ?? undefined;
+    const customerName = p?.full_name ?? 'Customer';
+
+    if (!customerPhone) {
+      return { success: false, error: 'Customer phone number not found' };
+    }
+
+    const data: BookingReminderData = {
+      bookingId: b.booking_id,
+      bookingDate: b.booking_date,
+      timeSlots: (b.slots || []).map((slot: { hour: number }) => `${String(slot.hour).padStart(2, '0')}:00`).sort(),
+      location: b.turf?.location?.name || '',
+      service: b.turf?.service?.name || '',
+      turf: b.turf?.name || '',
+      customerName,
+      customerPhone,
+      totalAmount: Number(b.total_amount),
+    };
+    return this.sendConfirmationReminder(data);
+  }
+
+  /**
    * Get bookings that need a reminder for a given "minutes before" window.
    * Booking start = booking_date + min(slots).hour. Send when that is ~minutesBefore from now.
    * Excludes bookings that already have a reminder sent for this minutes_before.

@@ -5,7 +5,8 @@ export type AskEvaNotificationType =
   | 'payment_success'
   | 'booking_reminder'
   | 'payment_reminder'
-  | 'booking_cancellation';
+  | 'booking_cancellation'
+  | 'welcome';
 
 export interface WhatsAppMessage {
   to: string; // Phone number with country code (e.g., +919876543210)

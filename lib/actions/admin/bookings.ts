@@ -180,13 +180,18 @@ export async function updateBookingStatus(
     return { error: error.message };
   }
 
-  // WhatsApp cancellation notification when status set to cancelled (log failure)
+  const { BookingReminderService } = await import('@/lib/services/booking-reminders');
   if (status === 'cancelled') {
-    const { BookingReminderService } = await import('@/lib/services/booking-reminders');
     BookingReminderService.sendCancellationByBookingId(bookingId).then((res) => {
       if (res?.error) console.error('[WhatsApp] Cancellation send failed:', res.error);
     }).catch((err) => {
       console.error('[WhatsApp] Cancellation send error:', err instanceof Error ? err.message : err);
+    });
+  } else if (status === 'confirmed') {
+    BookingReminderService.sendConfirmationByBookingId(bookingId).then((res) => {
+      if (res?.error) console.error('[WhatsApp] Confirmation send failed:', res.error);
+    }).catch((err) => {
+      console.error('[WhatsApp] Confirmation send error:', err instanceof Error ? err.message : err);
     });
   }
 
@@ -275,7 +280,16 @@ export async function updateReceivedBalance(
     return { error: error.message };
   }
 
-  // Revalidate booking pages
+  // WhatsApp payment success when admin records payment (so customer gets notified)
+  if (paymentDifference > 0) {
+    const { BookingReminderService } = await import('@/lib/services/booking-reminders');
+    BookingReminderService.sendPaymentSuccessByBookingId(bookingId, paymentDifference).then((res) => {
+      if (res?.error) console.error('[WhatsApp] Payment success send failed:', res.error);
+    }).catch((err) => {
+      console.error('[WhatsApp] Payment success send error:', err instanceof Error ? err.message : err);
+    });
+  }
+
   revalidatePath('/admin/bookings');
   revalidatePath('/admin');
   revalidatePath('/staff');

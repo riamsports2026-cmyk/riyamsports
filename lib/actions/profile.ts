@@ -1,16 +1,18 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { Profile } from '@/lib/types';
 import { validateMobileNumber } from '@/lib/utils/phone';
+import { BookingReminderService } from '@/lib/services/booking-reminders';
 
 const profileSchema = z.object({
   full_name: z.string().min(1, 'Full name is required'),
   mobile_number: z.string().refine(
     (v) => validateMobileNumber(v, { normalize: false }).valid,
-    (v) => ({ message: validateMobileNumber(v, { normalize: false }).error ?? 'Invalid mobile number' })
+    { message: 'Invalid mobile number' }
   ),
   profile_image: z
     .union([z.string().url('Invalid URL format'), z.literal(''), z.null()])
@@ -44,6 +46,13 @@ export async function updateProfile(
     const phoneResult = validateMobileNumber(validated.mobile_number, { normalize: true });
     const mobileToSave = phoneResult.normalized ?? validated.mobile_number;
 
+    // Check if this is first time adding mobile (for welcome WhatsApp)
+    let hadMobileBefore = false;
+    const serviceClient = await createServiceClient();
+    const { data: existing } = await serviceClient.from('profiles').select('mobile_number').eq('id', user.id).maybeSingle();
+    const existingRow = existing as { mobile_number?: string | null } | null;
+    hadMobileBefore = !!existingRow?.mobile_number?.trim();
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('profiles') as any).upsert({
       id: user.id,
@@ -54,6 +63,13 @@ export async function updateProfile(
 
     if (error) {
       return { error: error.message };
+    }
+
+    // Send welcome WhatsApp when user first adds/updates mobile (new account or complete profile)
+    if (!hadMobileBefore && mobileToSave) {
+      BookingReminderService.sendWelcome(mobileToSave, validated.full_name || 'there').then((res) => {
+        if (res?.error) console.error('[WhatsApp] Welcome send failed:', res.error);
+      }).catch(() => {});
     }
 
     revalidatePath('/complete-profile');

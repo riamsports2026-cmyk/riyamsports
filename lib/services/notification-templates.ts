@@ -101,6 +101,13 @@ Your booking has been cancelled.
 • Time: {{timeslots}}
 
 If you did not request this cancellation or have any queries, please contact us.`,
+
+  /** Sent when user first adds mobile (complete profile / new account welcome). */
+  welcome: `Welcome to RIAM Sports!
+
+Hi {{customername}}, we are glad to have you. Book your favourite turf and get started.
+
+For any queries, please contact us.`,
 } as const;
 
 export type TemplateKey = keyof typeof NOTIFICATION_TEMPLATES;

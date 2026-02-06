@@ -37,7 +37,14 @@ This list shows **every case** when a customer receives a WhatsApp message from 
 
 ---
 
-## 5. Booking cancelled  
+## 5. Welcome (new account / complete profile)
+**When:** When a user **first adds their mobile number** – e.g. after signup when they complete profile, or the first time they save a mobile in Profile.
+**Message:** Short welcome and “Book your favourite turf”.
+**Template:** `welcome` (1 body param). Optional env: `ASKEVA_TEMPLATE_WELCOME`.
+
+---
+
+## 6. Booking cancelled
 **When:** Whenever a booking is **cancelled**, in any of these cases:  
 - Customer cancels their own booking (Cancel button on booking page)  
 - Admin sets booking status to **Cancelled** (Admin → Bookings)  
@@ -55,7 +62,8 @@ This list shows **every case** when a customer receives a WhatsApp message from 
 | 2 | Payment success     | After payment is successful (webhook)         |
 | 3 | Booking reminder    | At configured times before booking (cron)     |
 | 4 | Payment reminder    | When you manually send it                     |
-| 5 | Booking cancelled   | When booking is cancelled (customer/admin/staff) |
+| 5 | Welcome             | When user first adds mobile (complete profile)    |
+| 6 | Booking cancelled   | When booking is cancelled (customer/admin/staff) |
 
 ---
 

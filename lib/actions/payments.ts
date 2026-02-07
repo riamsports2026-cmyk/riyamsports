@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { PaymentService } from '@/lib/services/payment';
-import { getPaymentGatewaySettings } from './admin/payment-gateways';
+import { getPaymentGatewaySettingsPublic } from './payment-gateways-public';
 import type { Booking } from '@/lib/types';
 import type { Database } from '@/lib/types/database';
 
@@ -41,10 +41,7 @@ export async function createPaymentOrder(
     return { error: 'Booking is already paid' };
   }
 
-  const gatewaySettings = await getPaymentGatewaySettings();
-  if (!gatewaySettings) {
-    return { error: 'Payment gateway settings not found' };
-  }
+  const gatewaySettings = await getPaymentGatewaySettingsPublic();
 
   if (gateway === 'razorpay' && !gatewaySettings.razorpay_enabled) {
     return { error: 'Razorpay is not enabled' };

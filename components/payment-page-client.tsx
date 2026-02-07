@@ -169,12 +169,12 @@ export function PaymentPageClient({
                 {processing ? 'Processing...' : `Pay ₹${paymentAmount.toLocaleString()}`}
               </button>
 
-              <a
+              {/* <a
                 href={`/bookings/${booking.id}`}
                 className="block text-center text-sm text-gray-600 hover:text-gray-900"
               >
                 Skip payment for now
-              </a>
+              </a> */}
             </div>
           </div>
         </div>

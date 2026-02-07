@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createServiceClient();
 
     if (gateway === 'razorpay') {
-      const { order_id, payment_id, status } = body.payload?.payment?.entity || body;
+      const entity = body.payload?.payment?.entity || body;
+      const order_id = entity.order_id;
+      const payment_id = entity.id ?? entity.payment_id; // Razorpay uses "id" for payment id
+      const status = entity.status;
 
       if (status === 'captured') {
         const { data: payRow } = await supabase

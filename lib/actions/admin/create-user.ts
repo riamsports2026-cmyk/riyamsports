@@ -11,10 +11,12 @@ const createUserSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(1, 'Full name is required'),
-  mobileNumber: z.string().refine(
-    (v) => validateMobileNumber(v, { normalize: false }).valid,
-    (v) => ({ message: validateMobileNumber(v, { normalize: false }).error ?? 'Invalid mobile number' })
-  ),
+  mobileNumber: z.string().superRefine((v, ctx) => {
+    const result = validateMobileNumber(v, { normalize: false });
+    if (!result.valid) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.error ?? 'Invalid mobile number' });
+    }
+  }),
   roleName: z.string().min(1, 'Role is required'),
   locationId: z.string().uuid().optional(),
 });

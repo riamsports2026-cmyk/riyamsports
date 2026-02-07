@@ -32,20 +32,22 @@ CROSS JOIN services s
 WHERE l.is_active = true AND s.is_active = true
 ON CONFLICT DO NOTHING;
 
--- Insert hourly pricing (6 AM to 11 PM, ₹500-₹2000 per hour)
+-- Insert hourly pricing for all 24 hours (12am–11pm)
+-- Hours 0–5 (12am–6am): night rate; 6–23: same as before
 INSERT INTO hourly_pricing (turf_id, hour, price)
 SELECT 
   t.id,
   hour,
   CASE 
-    WHEN hour BETWEEN 6 AND 9 THEN 500  -- Early morning discount
-    WHEN hour BETWEEN 10 AND 17 THEN 1000  -- Day time
-    WHEN hour BETWEEN 18 AND 21 THEN 1500  -- Evening peak
-    WHEN hour BETWEEN 22 AND 23 THEN 1200  -- Late evening
-    ELSE 800  -- Other hours
+    WHEN hour BETWEEN 0 AND 5 THEN 400   -- 12am–6am night rate
+    WHEN hour BETWEEN 6 AND 9 THEN 500   -- Early morning discount
+    WHEN hour BETWEEN 10 AND 17 THEN 1000 -- Day time
+    WHEN hour BETWEEN 18 AND 21 THEN 1500 -- Evening peak
+    WHEN hour BETWEEN 22 AND 23 THEN 1200 -- Late evening
+    ELSE 800
   END
 FROM turfs t
-CROSS JOIN generate_series(6, 23) AS hour
+CROSS JOIN generate_series(0, 23) AS hour
 WHERE t.is_available = true
 ON CONFLICT (turf_id, hour) DO NOTHING;
 

@@ -88,10 +88,10 @@ export async function getAvailableSlots(
     return [];
   }
 
-  const allHours = rows.filter((p) => p.price > 0).map((p) => p.hour);
+  // Include all hours that have a pricing row (including price 0)
+  const allHours = rows.map((p) => p.hour);
 
-  // Return all unbooked hours that have pricing. Past-hour filtering for "today"
-  // is done on the client so the user's local timezone is used (server may be UTC).
+  // Return all unbooked hours. Past-hour filtering for "today" is done on the client (user timezone).
   const availableHours = allHours.filter((hour) => !bookedHours.has(hour));
   return availableHours;
 }

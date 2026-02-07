@@ -6,7 +6,7 @@ import { BookingReminderService } from '@/lib/services/booking-reminders';
  * Call every 5 minutes so 5-min and 1-hour windows are hit (e.g. cron-job.org or Vercel Cron).
  *
  * Setup:
- * - Vercel: add to vercel.json, schedule "*/5 * * * *" (every 5 min) or "0 * * * *" (hourly)
+ * - Vercel: add to vercel.json crons, e.g. every 5 min or hourly
  * - External: GET /api/cron/send-booking-reminders with Authorization: Bearer CRON_SECRET
  */
 export async function GET(request: NextRequest) {

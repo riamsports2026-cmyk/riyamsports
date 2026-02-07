@@ -4,6 +4,36 @@ Use this so your app automatically confirms payments and sends the "Payment succ
 
 ---
 
+## Option A: Single webhook (recommended)
+
+Use **one** webhook in Razorpay for both Payment and Order events. One URL ⇒ one Webhook Secret ⇒ no 401 on `order.paid`.
+
+### Checklist
+
+1. **Razorpay Dashboard**
+   - Go to [Razorpay Dashboard](https://dashboard.razorpay.com/) → **Settings** → **Webhooks** (or **Developers** → **Webhooks**).
+   - If you already have **two** webhooks (e.g. one for Payment, one for Order): **delete** the extra one, or edit so you end up with **only one** webhook entry.
+
+2. **Create or edit the single webhook**
+   - **Webhook URL:** `https://booking.riamsportsarena.com/api/webhooks/payment` (or your production domain).
+   - **Active events** – enable **both**:
+     - **Payment** → **payment.captured**
+     - **Order** → **order.paid**
+   - Save.
+
+3. **Copy the Webhook Secret**
+   - After saving, Razorpay shows a **Webhook Secret** for this webhook. Copy it (you won’t see it again unless you regenerate).
+
+4. **Set the secret in Netlify**
+   - Netlify → your site → **Site configuration** → **Environment variables**.
+   - Add or edit: **Key** `RAZORPAY_WEBHOOK_SECRET`, **Value** = the secret you copied.
+   - **Redeploy** the site so the new variable is used.
+
+5. **Verify**
+   - Make a test payment. In Razorpay Dashboard → Webhooks → your webhook → **Event Log**, both `payment.captured` / `payment.authorized` and `order.paid` should show **200**.
+
+---
+
 ## 1. Webhook URL
 
 Use this URL in the Razorpay dashboard (replace with your real domain):

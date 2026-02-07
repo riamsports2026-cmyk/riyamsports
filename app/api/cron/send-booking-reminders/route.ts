@@ -18,6 +18,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const schedules = await BookingReminderService.getActiveReminderSchedules();
+    if (!schedules?.length) {
+      return NextResponse.json({
+        success: true,
+        message: 'No active reminder schedules. Add schedules in Admin → Reminders.',
+        results: [],
+      });
+    }
+
     const results: { schedule: string; minutes_before: number; sent: number; failed: number; details: { bookingId: string; success: boolean; error?: string }[] }[] = [];
 
     for (const schedule of schedules) {
@@ -28,6 +36,8 @@ export async function GET(request: NextRequest) {
         const result = await BookingReminderService.sendReminder(booking);
         if (result.success) {
           await BookingReminderService.recordReminderSent(booking.bookingRowId, schedule.minutes_before);
+        } else if (result.error) {
+          console.error('[Cron] Reminder send failed', { bookingId: booking.bookingId, error: result.error });
         }
         details.push({
           bookingId: booking.bookingId,

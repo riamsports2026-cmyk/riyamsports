@@ -314,6 +314,7 @@ export class BookingReminderService {
     maxDate.setDate(maxDate.getDate() + 3);
     const maxDateStr = format(maxDate, 'yyyy-MM-dd');
 
+    // Fetch bookings with user_id (profiles fetched separately so mobile_number is reliable)
     const { data: bookings, error } = await serviceClient
       .from('bookings')
       .select(`
@@ -321,10 +322,7 @@ export class BookingReminderService {
         booking_id,
         booking_date,
         total_amount,
-        user:profiles!bookings_user_id_fkey(
-          full_name,
-          mobile_number
-        ),
+        user_id,
         turf:turfs(
           name,
           location:locations(name),
@@ -338,6 +336,15 @@ export class BookingReminderService {
 
     if (error || !bookings?.length) return [];
 
+    const userIds = [...new Set((bookings as { user_id: string }[]).map((b) => b.user_id).filter(Boolean))];
+    const { data: profiles } = await serviceClient
+      .from('profiles')
+      .select('id, full_name, mobile_number')
+      .in('id', userIds);
+    const profileMap = new Map(
+      (profiles ?? []).map((p: { id: string; full_name?: string | null; mobile_number?: string | null }) => [p.id, p])
+    );
+
     const { data: sentRows } = await (serviceClient.from('booking_reminders_sent') as any)
       .select('booking_id')
       .eq('minutes_before', minutesBefore);
@@ -348,7 +355,9 @@ export class BookingReminderService {
     const result: (BookingReminderData & { bookingRowId: string })[] = [];
 
     for (const b of bookings as any[]) {
-      if (!b.user?.mobile_number || sentBookingIds.has(b.id)) continue;
+      const profile = b.user_id ? profileMap.get(b.user_id) : null;
+      const customerPhone = profile?.mobile_number ?? undefined;
+      if (!customerPhone || sentBookingIds.has(b.id)) continue;
       const slots = b.slots ?? [];
       const minHour = slots.length ? Math.min(...slots.map((s: { hour: number }) => s.hour)) : 0;
       const startStr = `${b.booking_date}T${String(minHour).padStart(2, '0')}:00:00`;
@@ -363,8 +372,8 @@ export class BookingReminderService {
         location: b.turf?.location?.name || '',
         service: b.turf?.service?.name || '',
         turf: b.turf?.name || '',
-        customerName: b.user?.full_name || 'Customer',
-        customerPhone: b.user?.mobile_number || '',
+        customerName: profile?.full_name ?? 'Customer',
+        customerPhone,
         totalAmount: b.total_amount,
       });
     }

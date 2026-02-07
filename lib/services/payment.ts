@@ -108,9 +108,9 @@ export class PaymentService {
     signature: string
   ): Promise<boolean> {
     if (gateway === 'razorpay') {
-      return this.verifyRazorpayWebhook(payload, signature);
+      return this.verifyRazorpayWebhook(payload as string | Record<string, unknown>, signature);
     } else {
-      return this.verifyPayGlobalWebhook(payload, signature);
+      return this.verifyPayGlobalWebhook(payload as string | Record<string, unknown>, signature);
     }
   }
 
@@ -123,7 +123,8 @@ export class PaymentService {
     }
 
     const crypto = await import('crypto');
-    const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const body: string =
+      typeof payload === 'string' ? payload : JSON.stringify(payload as Record<string, unknown>);
     const expectedSignature = crypto
       .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
       .update(body)
@@ -144,7 +145,8 @@ export class PaymentService {
     }
 
     const crypto = await import('crypto');
-    const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const body: string =
+      typeof payload === 'string' ? payload : JSON.stringify(payload as Record<string, unknown>);
     const expectedSignature = crypto
       .createHmac('sha256', env.PAYGLOBAL_WEBHOOK_SECRET)
       .update(body)

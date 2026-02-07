@@ -6,7 +6,8 @@ import { headers } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Razorpay signs the raw body – we must verify with the exact string, not JSON.stringify(parsed)
+    const rawBody = await request.text();
     const headersList = await headers();
     const razorpaySig = headersList.get('x-razorpay-signature') || '';
     const payglocalSig = headersList.get('x-payglocal-signature') || '';
@@ -16,21 +17,33 @@ export async function POST(request: NextRequest) {
       | 'payglobal';
     const signature = gateway === 'payglobal' ? payglocalSig : razorpaySig;
 
-    const isValid = await PaymentService.verifyWebhook(gateway, body, signature);
+    const isValid = await PaymentService.verifyWebhook(
+      gateway,
+      rawBody as string,
+      signature
+    );
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
+    let body: Record<string, unknown> = {};
+    try {
+      body = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : {};
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
     const supabase = await createServiceClient();
 
     if (gateway === 'razorpay') {
-      const entity = body.payload?.payment?.entity || body;
+      const payload = body.payload as { payment?: { entity?: { order_id?: string; id?: string; payment_id?: string; status?: string } } } | undefined;
+      const entity = payload?.payment?.entity ?? (body as { order_id?: string; id?: string; payment_id?: string; status?: string });
       const order_id = entity.order_id;
       const payment_id = entity.id ?? entity.payment_id; // Razorpay uses "id" for payment id
       const status = entity.status;
 
-      if (status === 'captured') {
+      if (status === 'captured' && order_id) {
         const { data: payRow } = await supabase
           .from('payments')
           .select('booking_id, amount')
@@ -79,9 +92,11 @@ export async function POST(request: NextRequest) {
         }
       }
     } else if (gateway === 'payglobal') {
-      const { order_id, payment_id, status } = body;
+      const order_id = body.order_id as string | undefined;
+      const payment_id = body.payment_id as string | undefined;
+      const status = body.status as string | undefined;
 
-      if (status === 'SUCCESS') {
+      if (status === 'SUCCESS' && order_id) {
         const { data: payRow } = await supabase
           .from('payments')
           .select('booking_id, amount')

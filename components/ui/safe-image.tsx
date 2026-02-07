@@ -2,6 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
+/** Reject empty or invalid data URLs that cause net::ERR_INVALID_URL (e.g. data:;base64,= from auth/profile) */
+function isEmptyDataUrl(s: string): boolean {
+  const t = s.trim().toLowerCase();
+  if (!t.startsWith('data:')) return false;
+  // data:;base64,= or data:image/...;base64,= (empty payload)
+  if (t === 'data:;base64,=' || t.endsWith(';base64,=') || t.endsWith(';base64,')) return true;
+  return false;
+}
+
 interface SafeImageProps {
   src: string | null | undefined | string[];
   alt: string;
@@ -22,15 +31,14 @@ export function SafeImage({
   fallback,
   fill = false,
 }: SafeImageProps) {
-  // Normalize src to always be a string or null (handle arrays)
+  // Normalize src to always be a string or null (handle arrays, empty/invalid data URLs)
   const normalizedSrc = useMemo(() => {
     if (!src) return null;
     if (Array.isArray(src)) {
-      // If it's an array, use the first valid string
-      const validSrc = src.find(s => typeof s === 'string' && s.trim() !== '');
+      const validSrc = src.find(s => typeof s === 'string' && s.trim() !== '' && !isEmptyDataUrl(s));
       return validSrc || null;
     }
-    if (typeof src === 'string' && src.trim() !== '') {
+    if (typeof src === 'string' && src.trim() !== '' && !isEmptyDataUrl(src)) {
       return src;
     }
     return null;

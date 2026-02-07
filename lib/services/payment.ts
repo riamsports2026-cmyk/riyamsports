@@ -118,7 +118,9 @@ export class PaymentService {
     payload: string | Record<string, unknown>,
     signature: string
   ): Promise<boolean> {
-    if (!env.RAZORPAY_KEY_SECRET) {
+    // Razorpay signs webhooks with the Webhook Secret from Dashboard → Webhooks, not the API key secret.
+    const secret = env.RAZORPAY_WEBHOOK_SECRET || env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
       return false;
     }
 
@@ -126,7 +128,7 @@ export class PaymentService {
     const body: string =
       typeof payload === 'string' ? payload : JSON.stringify(payload as Record<string, unknown>);
     const expectedSignature = crypto
-      .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', secret)
       .update(body)
       .digest('hex');
 

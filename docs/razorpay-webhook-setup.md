@@ -16,7 +16,7 @@ Examples:
 - Production: `https://riamsports.com/api/webhooks/payment`
 - Local (ngrok): `https://abc123.ngrok.io/api/webhooks/payment`
 
-Razorpay will send a **POST** request to this URL when a payment is captured. Your app verifies the signature using **RAZORPAY_KEY_SECRET** (no separate webhook secret).
+Razorpay will send a **POST** request to this URL when a payment is captured. Your app verifies the signature using the **Webhook Secret** from Razorpay Dashboard (see below).
 
 ---
 
@@ -30,29 +30,30 @@ Razorpay will send a **POST** request to this URL when a payment is captured. Yo
 6. **Active events:** Enable at least:
    - **Payment** → **payment.captured**
 7. Save.
+8. **Copy the Webhook Secret** shown after saving (or when you edit the webhook). This is **not** the same as your API Key Secret. You will set it as `RAZORPAY_WEBHOOK_SECRET` in Netlify (see next section).
 
-Razorpay will send the webhook with header **x-razorpay-signature**. Your app verifies it using `RAZORPAY_KEY_SECRET` (HMAC SHA256 of the request body).
+Razorpay sends the header **x-razorpay-signature** (HMAC SHA256 of the raw request body using the Webhook Secret). If you don’t set `RAZORPAY_WEBHOOK_SECRET`, the app falls back to `RAZORPAY_KEY_SECRET` for verification (not recommended for production).
 
 ---
 
 ## 3. Environment variables
 
-In `.env` (or your host’s env):
+In `.env` or **Netlify** (Site → Environment variables):
 
 ```env
 RAZORPAY_KEY_ID=rzp_live_xxxx
 RAZORPAY_KEY_SECRET=your_key_secret
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
 ```
 
-The **same** key secret is used for:
-- Creating orders (API).
-- Verifying webhook signature (so no separate webhook secret).
+- **RAZORPAY_WEBHOOK_SECRET** – **Required for production.** Copy from Razorpay Dashboard → Webhooks → your webhook → Secret. If this is missing or wrong, the webhook will return **401 Unauthorized** (signature verification fails).
+- **RAZORPAY_KEY_SECRET** – Used for creating orders and (if `RAZORPAY_WEBHOOK_SECRET` is not set) for webhook verification.
 
 ---
 
 ## 4. What the app does when it receives the webhook
 
-1. Verifies **x-razorpay-signature** using `RAZORPAY_KEY_SECRET`.
+1. Verifies **x-razorpay-signature** using `RAZORPAY_WEBHOOK_SECRET` (or `RAZORPAY_KEY_SECRET` if webhook secret is not set).
 2. If the event is **payment.captured**:
    - Finds the payment row by `gateway_order_id` (Razorpay order id).
    - Updates payment: `gateway_payment_id`, `status: success`.
@@ -80,5 +81,5 @@ If the signature is invalid, the API returns **401**. If the payment/booking is 
 | **URL** | `https://YOUR_DOMAIN/api/webhooks/payment` |
 | **Method** | POST |
 | **Event** | `payment.captured` |
-| **Auth** | Signature in header `x-razorpay-signature` (verified with RAZORPAY_KEY_SECRET) |
-| **No extra secret** | Razorpay uses the same key secret for webhook verification |
+| **Auth** | Signature in header `x-razorpay-signature` (verified with RAZORPAY_WEBHOOK_SECRET from Dashboard) |
+| **401 cause** | Missing or wrong `RAZORPAY_WEBHOOK_SECRET` in Netlify → set it from Razorpay Dashboard → Webhooks → Secret |

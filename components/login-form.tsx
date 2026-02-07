@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 interface LoginFormProps {
   error?: string;
+  redirect?: string;
 }
 
 /** Plain <a> so the browser does a full page navigation to the route handler.

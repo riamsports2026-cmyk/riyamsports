@@ -396,6 +396,7 @@ export class BookingReminderService {
 
   /**
    * Fetch booking details and send payment success notification (for use from webhook/server).
+   * Fetches profile in a separate query (same as cancellation/confirmation) so mobile_number is reliable.
    */
   static async sendPaymentSuccessByBookingId(
     bookingRowId: string,
@@ -408,7 +409,7 @@ export class BookingReminderService {
         booking_id,
         booking_date,
         total_amount,
-        user:profiles!bookings_user_id_fkey(full_name, mobile_number),
+        user_id,
         turf:turfs(
           name,
           location:locations(name),
@@ -420,11 +421,28 @@ export class BookingReminderService {
       .single();
 
     if (error || !booking) {
+      console.error('[WhatsApp] Payment success: booking fetch failed', { bookingRowId, supabaseError: error });
       return { success: false, error: 'Booking not found' };
     }
 
     const b = booking as any;
-    if (!b.user?.mobile_number) {
+    const userId = b.user_id as string | undefined;
+    if (!userId) {
+      console.error('[WhatsApp] Payment success: booking has no user_id', { bookingRowId });
+      return { success: false, error: 'Booking has no user_id' };
+    }
+
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('full_name, mobile_number')
+      .eq('id', userId)
+      .maybeSingle();
+    const p = profile as { full_name?: string | null; mobile_number?: string | null } | null;
+    const customerPhone = p?.mobile_number ?? undefined;
+    const customerName = p?.full_name ?? 'Customer';
+
+    if (!customerPhone) {
+      console.error('[WhatsApp] Payment success not sent: customer has no mobile_number in profile (booking id:', bookingRowId, ')');
       return { success: false, error: 'Customer phone number not found' };
     }
 
@@ -437,12 +455,16 @@ export class BookingReminderService {
       location: b.turf?.location?.name || '',
       service: b.turf?.service?.name || '',
       turf: b.turf?.name || '',
-      customerName: b.user?.full_name || 'Customer',
-      customerPhone: b.user?.mobile_number || '',
+      customerName,
+      customerPhone,
       totalAmount: Number(b.total_amount),
       amountPaid,
     };
-    return this.sendPaymentSuccess(data);
+    const result = await this.sendPaymentSuccess(data);
+    if (!result.success) {
+      console.error('[WhatsApp] Payment success send failed', { bookingRowId, error: result.error });
+    }
+    return result;
   }
 }
 

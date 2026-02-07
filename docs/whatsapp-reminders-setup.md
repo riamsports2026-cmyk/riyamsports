@@ -4,9 +4,9 @@ This guide explains how to set up WhatsApp reminders for bookings.
 
 ## Features (Notifications Module)
 
-- ✅ **WhatsApp Booking Confirmation** – Sent automatically when a booking is created
-- ✅ **Payment Success Notification** – Sent when payment is captured (Razorpay/PayGlobal webhook)
-- ✅ **Booking Reminder (Scheduled)** – Sent 24 hours before booking via cron (`/api/cron/send-booking-reminders`)
+- ✅ **WhatsApp Booking Confirmation** – Sent when the booking is **confirmed** (after payment via webhook, or when admin/staff confirm). Not sent at booking creation (booking is pending payment until then).
+- ✅ **Payment Success Notification** – Sent when payment is captured (Razorpay/PayGlobal webhook, or when admin/staff record payment).
+- ✅ **Booking Reminder (Scheduled)** – Sent before the booking time via cron (`/api/cron/send-booking-reminders`)
 - ✅ **Dynamic Message Templates** – Templates in `lib/services/notification-templates.ts` with placeholders (`{{booking_id}}`, `{{date}}`, etc.)
 - ✅ **Customer Mobile Number Validation** – Validation and normalization in `lib/utils/phone.ts`; used in profile, complete-profile, admin create-user, and before sending WhatsApp
 
@@ -72,8 +72,8 @@ Use this **exact structure** when creating each template:
 
 | # | Template name (use in env) | Language | Body text | When it's used |
 |---|----------------------------|----------|-----------|-----------------|
-| 1 | `riamsports_booking_confirmation` | English (en) | See below | After customer creates a booking |
-| 2 | `riamsports_payment_success`      | English (en) | See below | After payment is successful |
+| 1 | `riamsports_booking_confirmation` | English (en) | See below | When booking is confirmed (after payment or by admin/staff) |
+| 2 | `riamsports_payment_success`      | English (en) | See below | After payment is successful (webhook or admin/staff) |
 | 3 | `riamsports_booking_reminder`    | English (en) | See below | Before booking (configurable) |
 | 4 | `riamsports_payment_reminder`    | English (en) | See below | When you send a payment reminder |
 | 5 | `riamsports_booking_cancellation` | English (en) | See below | When a booking is cancelled (customer or admin/staff) |
@@ -215,14 +215,27 @@ WHERE reminder_sent IS NULL;
    - Call the cron endpoint manually
    - Check if reminder is sent
 
+## When each WhatsApp is sent (flow)
+
+| Message | When it’s sent |
+|--------|------------------|
+| **Booking confirmation** | After **payment** is captured (payment webhook), or when **admin/staff** mark the booking as confirmed. *Not* sent when the customer first creates the booking (that is still pending payment). |
+| **Payment success** | When **payment** is captured (Razorpay/PayGlobal webhook), or when **admin/staff** record a payment. |
+| **Booking reminder** | Before the booking time (cron job `/api/cron/send-booking-reminders`). |
+| **Payment reminder** | When you trigger a payment reminder (e.g. from notifications or manual flow). |
+| **Booking cancellation** | When the customer or admin/staff cancels the booking. |
+| **Welcome** | When a user first adds/updates their mobile number (complete profile). |
+
+**Webhook idempotency:** The payment webhook is idempotent. If Razorpay (or the gateway) sends the same event twice (retry), the app only processes it once: it checks if the payment row is already `status: success` and, if so, returns 200 without updating the DB or sending WhatsApp again. So you won’t get duplicate payment-success or confirmation messages.
+
 ## Message Templates
 
 Templates are defined in `lib/services/notification-templates.ts` with placeholders like `{{bookingid}}`, `{{date}}`, `{{timeslots}}`, `{{location}}`, `{{amountpaid}}`, `{{paymenturl}}` (letters/numbers only, no underscores or special chars for AskEva compatibility). The system sends:
 
-1. **Booking Confirmation** – After booking creation (with payment link if pending)
-2. **Payment Success** – When payment is captured (webhook)
-3. **Booking Reminder** – 24 hours before booking (cron)
-4. **Payment Reminder** – For pending payments (manual or scheduled)
+1. **Booking Confirmation** – When the booking is confirmed (after payment or by admin/staff).
+2. **Payment Success** – When payment is captured (webhook or admin/staff).
+3. **Booking Reminder** – Before booking time (cron).
+4. **Payment Reminder** – For pending payments (manual or scheduled).
 
 All messages include booking ID, location, service, turf, date, time slots, and amount info. To change copy, edit the template strings in `notification-templates.ts`.
 

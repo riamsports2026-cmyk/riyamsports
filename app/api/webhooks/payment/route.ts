@@ -46,10 +46,15 @@ export async function POST(request: NextRequest) {
       if (status === 'captured' && order_id) {
         const { data: payRow } = await supabase
           .from('payments')
-          .select('booking_id, amount')
+          .select('booking_id, amount, status')
           .eq('gateway_order_id', order_id)
           .single();
-        const payment = payRow as { booking_id: string; amount: number } | null;
+        const payment = payRow as { booking_id: string; amount: number; status?: string } | null;
+
+        // Idempotent: skip if we already processed this payment (e.g. Razorpay retry)
+        if (payment?.status === 'success') {
+          return NextResponse.json({ received: true });
+        }
 
         if (payment) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,12 +87,12 @@ export async function POST(request: NextRequest) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payment.booking_id);
-            // WhatsApp payment success + booking confirmation
-            await BookingReminderService.sendPaymentSuccessByBookingId(
-              payment.booking_id,
-              paymentAmount
-            );
-            await BookingReminderService.sendConfirmationByBookingId(payment.booking_id);
+            // Run WhatsApp notifications in background so we can return 200 quickly (avoid 499 timeout)
+            const bookingId = payment.booking_id;
+            void BookingReminderService.sendPaymentSuccessByBookingId(bookingId, paymentAmount)
+              .catch((e) => console.error('[webhook] sendPaymentSuccessByBookingId failed:', e));
+            void BookingReminderService.sendConfirmationByBookingId(bookingId)
+              .catch((e) => console.error('[webhook] sendConfirmationByBookingId failed:', e));
           }
         }
       }
@@ -99,10 +104,15 @@ export async function POST(request: NextRequest) {
       if (status === 'SUCCESS' && order_id) {
         const { data: payRow } = await supabase
           .from('payments')
-          .select('booking_id, amount')
+          .select('booking_id, amount, status')
           .eq('gateway_order_id', order_id)
           .single();
-        const payment = payRow as { booking_id: string; amount: number } | null;
+        const payment = payRow as { booking_id: string; amount: number; status?: string } | null;
+
+        // Idempotent: skip if we already processed this payment (e.g. gateway retry)
+        if (payment?.status === 'success') {
+          return NextResponse.json({ received: true });
+        }
 
         if (payment) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,12 +145,12 @@ export async function POST(request: NextRequest) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payment.booking_id);
-// WhatsApp payment success + booking confirmation
-            await BookingReminderService.sendPaymentSuccessByBookingId(
-              payment.booking_id,
-              paymentAmount
-            );
-            await BookingReminderService.sendConfirmationByBookingId(payment.booking_id);
+            // Run WhatsApp notifications in background so we can return 200 quickly (avoid 499 timeout)
+            const bookingId = payment.booking_id;
+            void BookingReminderService.sendPaymentSuccessByBookingId(bookingId, paymentAmount)
+              .catch((e) => console.error('[webhook] sendPaymentSuccessByBookingId failed:', e));
+            void BookingReminderService.sendConfirmationByBookingId(bookingId)
+              .catch((e) => console.error('[webhook] sendConfirmationByBookingId failed:', e));
           }
         }
     }

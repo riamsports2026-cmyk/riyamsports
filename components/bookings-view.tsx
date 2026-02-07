@@ -47,7 +47,11 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
-  const BookingCard = ({ booking }: { booking: Booking }) => (
+  const BookingCard = ({ booking }: { booking: Booking }) => {
+    const isPaid = booking.payment_status === 'paid' || booking.payment_status === 'partial';
+    const isPaymentPending = booking.payment_status === 'pending_payment';
+    const showPayNow = isPaymentPending && booking.booking_status !== 'cancelled';
+    return (
     <div className="bg-white rounded-xl shadow-lg border-2 border-[#1E3A5F]/10 hover:shadow-2xl transition-all duration-300 hover:border-[#FF6B35] p-4 sm:p-5 md:p-6 h-full flex flex-col min-h-[280px]">
       <div className="flex flex-col gap-2 mb-3 sm:mb-4">
         <div className="flex items-start justify-between gap-2">
@@ -55,19 +59,24 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
             <span className="text-xs sm:text-sm text-gray-500 font-normal block mb-0.5">Booking</span>
             <span className="block">#{booking.booking_id}</span>
           </h3>
-          <span
-            className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border-2 whitespace-nowrap shrink-0 ${
-              booking.booking_status === 'confirmed'
-                ? 'bg-green-100 text-green-800 border-green-300'
-                : booking.booking_status === 'pending_payment'
-                ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                : booking.booking_status === 'completed'
-                ? 'bg-blue-100 text-blue-800 border-blue-300'
-                : 'bg-red-100 text-red-800 border-red-300'
-            }`}
-          >
-            {booking.booking_status.replace('_', ' ').toUpperCase()}
-          </span>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span
+              className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border-2 whitespace-nowrap ${
+                booking.booking_status === 'confirmed'
+                  ? 'bg-green-100 text-green-800 border-green-300'
+                  : booking.booking_status === 'pending_payment'
+                  ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                  : booking.booking_status === 'completed'
+                  ? 'bg-blue-100 text-blue-800 border-blue-300'
+                  : 'bg-red-100 text-red-800 border-red-300'
+              }`}
+            >
+              {booking.booking_status.replace('_', ' ').toUpperCase()}
+            </span>
+            {booking.booking_status === 'confirmed' && isPaymentPending && (
+              <span className="text-[10px] sm:text-xs text-amber-600 font-medium">Payment pending</span>
+            )}
+          </div>
         </div>
       </div>
       
@@ -112,16 +121,14 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
           <span className="font-semibold text-[#1E3A5F] inline-block min-w-[80px]">💰 Total:</span>{' '}
           <span className="text-[#FF6B35] font-bold text-sm sm:text-base">₹{booking.total_amount.toLocaleString()}</span>
         </p>
-        {booking.payments && booking.payments.length > 0 && (
-          <p className="leading-relaxed">
-            <span className="font-semibold text-[#1E3A5F] inline-block min-w-[80px]">💳 Payment:</span>{' '}
-            <span className={`font-semibold text-xs sm:text-sm ${
-              booking.payments[0].payment_status === 'completed' ? 'text-green-600' : 'text-yellow-600'
-            }`}>
-              {booking.payments[0].payment_status === 'completed' ? '✅ Paid' : '⏳ Pending'}
-            </span>
-          </p>
-        )}
+        <p className="leading-relaxed">
+          <span className="font-semibold text-[#1E3A5F] inline-block min-w-[80px]">💳 Payment:</span>{' '}
+          <span className={`font-semibold text-xs sm:text-sm ${
+            isPaid ? 'text-green-600' : booking.payment_status === 'refunded' ? 'text-gray-600' : 'text-amber-600'
+          }`}>
+            {isPaid ? '✅ Paid' : booking.payment_status === 'refunded' ? 'Refunded' : '⏳ Pending'}
+          </span>
+        </p>
       </div>
       <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-2">
         <Link
@@ -130,12 +137,25 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
         >
           View details
         </Link>
+        {showPayNow && (
+          <Link
+            href={`/bookings/${booking.id}#pay`}
+            className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-lg text-white bg-[#FF6B35] hover:bg-[#E55A2B] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30"
+          >
+            Pay now
+          </Link>
+        )}
         <CancelBookingButton bookingId={booking.id} bookingStatus={booking.booking_status} variant="button" />
       </div>
     </div>
-  );
+    );
+  };
 
-  const BookingRow = ({ booking }: { booking: Booking }) => (
+  const BookingRow = ({ booking }: { booking: Booking }) => {
+    const isPaid = booking.payment_status === 'paid' || booking.payment_status === 'partial';
+    const isPaymentPending = booking.payment_status === 'pending_payment';
+    const showPayNow = isPaymentPending && booking.booking_status !== 'cancelled';
+    return (
     <li key={booking.id} className="hover:bg-[#FF6B35]/5 transition-colors">
       <div className="px-4 py-4 sm:px-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -157,6 +177,9 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
               >
                 {booking.booking_status.replace('_', ' ').toUpperCase()}
               </span>
+              {booking.booking_status === 'confirmed' && isPaymentPending && (
+                <span className="text-xs text-amber-600 font-medium">Payment pending</span>
+              )}
             </div>
             <div className="mt-2 text-sm text-gray-700 space-y-1.5">
               <div>
@@ -202,16 +225,14 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
                 <span className="font-semibold text-[#1E3A5F]">💰 Total Amount:</span>{' '}
                 <span className="text-[#FF6B35] font-bold">₹{booking.total_amount.toLocaleString()}</span>
               </p>
-              {booking.payments && booking.payments.length > 0 && (
-                <p>
-                  <span className="font-semibold text-[#1E3A5F]">💳 Payment Status:</span>{' '}
-                  <span className={`font-semibold ${
-                    booking.payments[0].payment_status === 'completed' ? 'text-green-600' : 'text-yellow-600'
-                  }`}>
-                    {booking.payments[0].payment_status === 'completed' ? '✅ Paid' : '⏳ Pending'}
-                  </span>
-                </p>
-              )}
+              <p>
+                <span className="font-semibold text-[#1E3A5F]">💳 Payment Status:</span>{' '}
+                <span className={`font-semibold ${
+                  isPaid ? 'text-green-600' : booking.payment_status === 'refunded' ? 'text-gray-600' : 'text-amber-600'
+                }`}>
+                  {isPaid ? '✅ Paid' : booking.payment_status === 'refunded' ? 'Refunded' : '⏳ Pending'}
+                </span>
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-3 sm:mt-0 sm:ml-4 shrink-0">
@@ -221,12 +242,21 @@ export function BookingsView({ bookings, viewMode = 'row' }: BookingsViewProps) 
             >
               View details
             </Link>
+            {showPayNow && (
+              <Link
+                href={`/bookings/${booking.id}#pay`}
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-[#FF6B35] hover:bg-[#E55A2B] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30"
+              >
+                Pay now
+              </Link>
+            )}
             <CancelBookingButton bookingId={booking.id} bookingStatus={booking.booking_status} variant="button" />
           </div>
         </div>
       </div>
     </li>
-  );
+    );
+  };
 
   if (view === 'row') {
     return (

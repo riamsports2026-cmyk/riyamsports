@@ -106,7 +106,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
               </p>
             </div>
 
-            <div className="border-t pt-4 mt-4">
+            <div id="pay" className="border-t pt-4 mt-4 scroll-mt-4">
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Total Amount:</span>
                 <span className="font-semibold">₹{booking.total_amount}</span>
@@ -115,8 +115,8 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
                 <span className="text-gray-600">Advance Amount:</span>
                 <span className="font-semibold">₹{booking.advance_amount}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-600">Booking Status:</span>
                 <span
                   className={`font-semibold ${
                     booking.booking_status === 'confirmed'
@@ -129,6 +129,27 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
                   {booking.booking_status.toUpperCase()}
                 </span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment:</span>
+                <span
+                  className={`font-semibold ${
+                    booking.payment_status === 'paid' || booking.payment_status === 'partial'
+                      ? 'text-green-600'
+                      : booking.payment_status === 'refunded'
+                      ? 'text-gray-600'
+                      : 'text-amber-600'
+                  }`}
+                >
+                  {booking.payment_status === 'paid' || booking.payment_status === 'partial'
+                    ? 'Paid'
+                    : booking.payment_status === 'refunded'
+                    ? 'Refunded'
+                    : 'Pending'}
+                </span>
+              </div>
+              {(booking.booking_status === 'confirmed' && booking.payment_status === 'pending_payment') && (
+                <p className="text-sm text-amber-600 mt-2">Slot is confirmed. Complete payment at the venue or use the payment link sent to you.</p>
+              )}
             </div>
           </div>
           {(booking.booking_status === 'pending_payment' || booking.booking_status === 'confirmed') && (

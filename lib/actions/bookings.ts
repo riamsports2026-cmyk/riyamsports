@@ -312,29 +312,8 @@ export async function createBooking(
       return { error: slotsError.message || 'Failed to create booking slots' };
     }
 
-    // WhatsApp booking confirmation (fire-and-forget; do not block response)
-    const { data: profile } = await serviceClient
-      .from('profiles')
-      .select('full_name, mobile_number')
-      .eq('id', user.id)
-      .maybeSingle();
-    const profileRow = profile as { full_name?: string | null; mobile_number?: string | null } | null;
-    if (profileRow?.mobile_number) {
-      const timeSlots = validated.selected_hours
-        .map((h) => `${String(h).padStart(2, '0')}:00`)
-        .sort();
-      BookingReminderService.sendConfirmationReminder({
-        bookingId,
-        bookingDate: validated.booking_date,
-        timeSlots,
-        location: (turfData.location as { name?: string } | null)?.name ?? '',
-        service: (turfData.service as { name?: string } | null)?.name ?? '',
-        turf: turfData.name ?? '',
-        customerName: profileRow.full_name ?? 'Customer',
-        customerPhone: profileRow.mobile_number,
-        totalAmount,
-      }).catch(() => {});
-    }
+    // Do not send "booking confirmation" here: booking is still pending_payment.
+    // Confirmation is sent only after payment (payment success WhatsApp) or when admin/staff confirm.
 
     return { success: true, bookingId: bookingData.id };
   } catch (error) {

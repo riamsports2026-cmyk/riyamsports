@@ -69,11 +69,12 @@ export async function POST(request: NextRequest) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payment.booking_id);
-            // WhatsApp payment success notification
+            // WhatsApp payment success + booking confirmation
             await BookingReminderService.sendPaymentSuccessByBookingId(
               payment.booking_id,
               paymentAmount
             );
+            await BookingReminderService.sendConfirmationByBookingId(payment.booking_id);
           }
         }
       }
@@ -119,14 +120,15 @@ export async function POST(request: NextRequest) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payment.booking_id);
-            // WhatsApp payment success notification
+// WhatsApp payment success + booking confirmation
             await BookingReminderService.sendPaymentSuccessByBookingId(
               payment.booking_id,
               paymentAmount
             );
+            await BookingReminderService.sendConfirmationByBookingId(payment.booking_id);
           }
         }
-      }
+    }
     }
 
     return NextResponse.json({ received: true });

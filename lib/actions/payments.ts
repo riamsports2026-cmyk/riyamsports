@@ -83,7 +83,8 @@ export async function createPaymentOrder(
         payment_method: 'online',
         status: 'pending',
       };
-      await serviceClient.from('payments').insert(paymentRow);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase typings infer 'never' for payments insert
+      await (serviceClient.from('payments') as any).insert(paymentRow);
     }
 
     return { orderId: order.id };
@@ -109,16 +110,18 @@ export async function verifyRazorpayPaymentOnReturn(bookingId: string): Promise<
   }
 
   const serviceClient = await createServiceClient();
-  const { data: booking, error: bookErr } = await serviceClient
+  const { data: bookingData, error: bookErr } = await serviceClient
     .from('bookings')
     .select('id, payment_gateway, payment_gateway_order_id, user_id')
     .eq('id', bookingId)
     .eq('user_id', user.id)
     .single();
 
-  if (bookErr || !booking) {
+  if (bookErr || !bookingData) {
     return { ok: false, error: 'Booking not found' };
   }
+  type BookingVerify = { id: string; payment_gateway: string | null; payment_gateway_order_id: string | null; user_id: string };
+  const booking = bookingData as unknown as BookingVerify;
   if (booking.payment_gateway !== 'razorpay' || !booking.payment_gateway_order_id) {
     return { ok: false, error: 'Not a Razorpay booking' };
   }
@@ -153,8 +156,13 @@ export async function verifyRazorpayPaymentOnReturn(bookingId: string): Promise<
       payment_method: 'online',
       status: 'success',
     };
-    const { data: inserted } = await serviceClient.from('payments').insert(insert).select('id, booking_id, amount').single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase typings infer 'never' for payments insert
+    const { data: inserted } = await (serviceClient.from('payments') as any).insert(insert).select('id, booking_id, amount').single();
     payRow = inserted;
+  }
+
+  if (!payRow) {
+    return { ok: false, error: 'Failed to find or create payment record' };
   }
 
   const payment = payRow as { id: string; booking_id: string; amount: number; status: string };
@@ -193,6 +201,7 @@ export async function verifyRazorpayPaymentOnReturn(bookingId: string): Promise<
       })
       .eq('id', payment.booking_id);
     await BookingReminderService.sendPaymentSuccessByBookingId(payment.booking_id, paymentAmount);
+    await BookingReminderService.sendConfirmationByBookingId(payment.booking_id);
   }
 
   return { ok: true };

@@ -2,7 +2,6 @@
 
 import { BookingWithDetails } from '@/lib/types';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 
 interface PaymentPageClientProps {
@@ -22,7 +21,6 @@ export function PaymentPageClient({
   gatewaySettings,
   createPaymentOrder,
 }: PaymentPageClientProps) {
-  const router = useRouter();
   // Customers only see the active gateway - no selection needed
   const activeGateway = gatewaySettings?.active_gateway || 'razorpay';
   const [processing, setProcessing] = useState(false);
@@ -79,8 +77,8 @@ export function PaymentPageClient({
           description: `Booking ${booking.booking_id}`,
           order_id: result.orderId,
           handler: function (response: any) {
-            // Payment success - redirect to booking page
-            router.push(`/bookings/${booking.id}?payment=success`);
+            // Payment success - full redirect so URL updates immediately and page loads without blocking on server-side verify
+            window.location.href = `/bookings/${booking.id}?payment=success`;
           },
           prefill: {
             name: booking.turf?.location?.name || '',

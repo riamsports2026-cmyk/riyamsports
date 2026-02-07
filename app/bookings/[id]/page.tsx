@@ -1,10 +1,10 @@
 import { getBooking } from '@/lib/actions/bookings';
-import { verifyRazorpayPaymentOnReturn } from '@/lib/actions/payments';
 import { formatTimeSlots } from '@/lib/utils/time-format';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { CancelBookingButton } from '@/components/cancel-booking-button';
+import { PaymentSuccessVerifier } from '@/components/payment-success-verifier';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,10 +22,6 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const { id } = await params;
   const { payment: paymentParam } = await searchParams;
 
-  if (paymentParam === 'success') {
-    await verifyRazorpayPaymentOnReturn(id);
-  }
-
   const booking = await getBooking(id);
 
   if (!booking) {
@@ -40,6 +36,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <PaymentSuccessVerifier bookingId={id} paymentParam={paymentParam} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {showPaymentSuccess && (
           <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">

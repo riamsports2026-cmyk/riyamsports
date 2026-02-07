@@ -1,4 +1,5 @@
 import { getBooking } from '@/lib/actions/bookings';
+import { verifyRazorpayPaymentOnReturn } from '@/lib/actions/payments';
 import { formatTimeSlots } from '@/lib/utils/time-format';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -7,6 +8,7 @@ import { CancelBookingButton } from '@/components/cancel-booking-button';
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -16,17 +18,41 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BookingDetailPage({ params }: PageProps) {
+export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { payment: paymentParam } = await searchParams;
+
+  if (paymentParam === 'success') {
+    await verifyRazorpayPaymentOnReturn(id);
+  }
+
   const booking = await getBooking(id);
 
   if (!booking) {
     notFound();
   }
 
+  const showPaymentSuccess =
+    paymentParam === 'success' &&
+    (booking.booking_status === 'confirmed' || booking.payment_status === 'paid' || booking.payment_status === 'partial');
+  const showPaymentPending =
+    paymentParam === 'success' && booking.booking_status === 'pending_payment';
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {showPaymentSuccess && (
+          <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+            <p className="font-medium">Payment successful</p>
+            <p className="text-sm mt-0.5">Your booking is confirmed. You will receive a confirmation message shortly.</p>
+          </div>
+        )}
+        {showPaymentPending && (
+          <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 p-4 text-amber-800">
+            <p className="font-medium">Verifying payment</p>
+            <p className="text-sm mt-0.5">If you completed the payment, your booking will update shortly. Refresh the page in a moment.</p>
+          </div>
+        )}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">
             Booking Confirmation

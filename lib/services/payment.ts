@@ -155,5 +155,25 @@ export class PaymentService {
       Buffer.from(expectedSignature)
     );
   }
+
+  /** Fetch Razorpay order payments and return captured payment id if any. */
+  static async getRazorpayOrderPaymentStatus(
+    orderId: string
+  ): Promise<{ captured: boolean; paymentId?: string }> {
+    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+      return { captured: false };
+    }
+    const Razorpay = (await import('razorpay')).default;
+    const razorpay = new Razorpay({
+      key_id: env.RAZORPAY_KEY_ID,
+      key_secret: env.RAZORPAY_KEY_SECRET,
+    });
+    const res = await razorpay.orders.fetchPayments(orderId);
+    const items = (res as { items?: Array<{ id: string; status: string }> }).items ?? [];
+    const captured = items.find((p) => p.status === 'captured');
+    return captured
+      ? { captured: true, paymentId: captured.id }
+      : { captured: false };
+  }
 }
 

@@ -27,10 +27,12 @@ Razorpay will send a **POST** request to this URL when a payment is captured. Yo
 3. Click **+ Add New Webhook**.
 4. **Webhook URL:** `https://YOUR_DOMAIN.com/api/webhooks/payment`
 5. **Alert email:** Your email (optional).
-6. **Active events:** Enable at least:
+6. **Active events:** Enable at least one (both recommended so either event confirms the payment):
    - **Payment** → **payment.captured**
+   - **Order** → **order.paid**
 7. Save.
-8. **Copy the Webhook Secret** shown after saving (or when you edit the webhook). This is **not** the same as your API Key Secret. You will set it as `RAZORPAY_WEBHOOK_SECRET` in Netlify (see next section).
+8. **Use a single webhook** for all events. If you create two webhooks (e.g. one for Payment, one for Order), each has its own **Webhook Secret** – you can only set one in `RAZORPAY_WEBHOOK_SECRET`, so one of them will get 401. Prefer one webhook URL with both events.
+9. **Copy the Webhook Secret** shown after saving (or when you edit the webhook). This is **not** the same as your API Key Secret. Set it as `RAZORPAY_WEBHOOK_SECRET` in Netlify (see next section).
 
 Razorpay sends the header **x-razorpay-signature** (HMAC SHA256 of the raw request body using the Webhook Secret). If you don’t set `RAZORPAY_WEBHOOK_SECRET`, the app falls back to `RAZORPAY_KEY_SECRET` for verification (not recommended for production).
 
@@ -54,13 +56,15 @@ RAZORPAY_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
 ## 4. What the app does when it receives the webhook
 
 1. Verifies **x-razorpay-signature** using `RAZORPAY_WEBHOOK_SECRET` (or `RAZORPAY_KEY_SECRET` if webhook secret is not set).
-2. If the event is **payment.captured**:
+2. Handles **payment.captured** and **order.paid** (same logic for both):
    - Finds the payment row by `gateway_order_id` (Razorpay order id).
    - Updates payment: `gateway_payment_id`, `status: success`.
    - Updates booking: `received_amount`, `payment_status`, `booking_status: confirmed`.
-   - Sends **Payment success** WhatsApp to the customer.
+   - Sends **Payment success** and **Booking confirmation** WhatsApp to the customer.
 
 If the signature is invalid, the API returns **401**. If the payment/booking is not found, it still returns **200** so Razorpay doesn’t retry unnecessarily.
+
+**Why does order.paid show 401 but payment.authorized show 200?** Razorpay sends different events to the same URL. If you have **two webhooks** in the Dashboard (e.g. one for Payment events, one for Order events), each has its **own Webhook Secret**. The app only has one `RAZORPAY_WEBHOOK_SECRET`, so one webhook’s events will fail signature verification (401). **Fix:** Use **one webhook** that subscribes to both **payment.captured** and **order.paid**, and set `RAZORPAY_WEBHOOK_SECRET` to that webhook’s secret.
 
 ---
 
@@ -80,6 +84,6 @@ If the signature is invalid, the API returns **401**. If the payment/booking is 
 |------|--------|
 | **URL** | `https://YOUR_DOMAIN/api/webhooks/payment` |
 | **Method** | POST |
-| **Event** | `payment.captured` |
+| **Events** | `payment.captured`, `order.paid` (use one webhook for both) |
 | **Auth** | Signature in header `x-razorpay-signature` (verified with RAZORPAY_WEBHOOK_SECRET from Dashboard) |
 | **401 cause** | Missing or wrong `RAZORPAY_WEBHOOK_SECRET` in Netlify → set it from Razorpay Dashboard → Webhooks → Secret |

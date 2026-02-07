@@ -37,13 +37,21 @@ export async function POST(request: NextRequest) {
     const supabase = await createServiceClient();
 
     if (gateway === 'razorpay') {
-      const payload = body.payload as { payment?: { entity?: { order_id?: string; id?: string; payment_id?: string; status?: string } } } | undefined;
-      const entity = payload?.payment?.entity ?? (body as { order_id?: string; id?: string; payment_id?: string; status?: string });
-      const order_id = entity.order_id;
-      const payment_id = entity.id ?? entity.payment_id; // Razorpay uses "id" for payment id
-      const status = entity.status;
+      const event = body.event as string | undefined;
+      const payload = body.payload as {
+        payment?: { entity?: { order_id?: string; id?: string; payment_id?: string; status?: string } };
+        order?: { entity?: { id?: string } };
+      } | undefined;
+      const paymentEntity = payload?.payment?.entity;
+      const orderEntity = payload?.order?.entity;
+      const entity = paymentEntity ?? (body as { order_id?: string; id?: string; payment_id?: string; status?: string });
+      const order_id = entity?.order_id ?? orderEntity?.id;
+      const payment_id = entity?.id ?? (entity as { payment_id?: string })?.payment_id;
+      const status = entity?.status;
 
-      if (status === 'captured' && order_id) {
+      // Process payment.captured (status === 'captured') or order.paid (event === 'order.paid')
+      const shouldProcess = order_id && (status === 'captured' || event === 'order.paid');
+      if (shouldProcess) {
         const { data: payRow } = await supabase
           .from('payments')
           .select('booking_id, amount, status')

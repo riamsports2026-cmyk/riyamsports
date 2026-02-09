@@ -120,7 +120,10 @@ export async function middleware(request: NextRequest) {
       loginPath = '/staff/login';
     }
     const redirectUrl = new URL(loginPath, request.url);
-    redirectUrl.searchParams.set('redirect', pathname);
+    // Only add redirect param when destination is not /book (default after login)
+    if (pathname !== '/book') {
+      redirectUrl.searchParams.set('redirect', pathname);
+    }
     return NextResponse.redirect(redirectUrl);
   }
 

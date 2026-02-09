@@ -35,7 +35,7 @@ export async function Navigation() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <Link href="/book" className="flex items-center space-x-2 sm:space-x-3 group">
+              <Link href={user ? '/book' : '/'} className="flex items-center space-x-2 sm:space-x-3 group">
                 <img 
                   src="/Riamlogo.png" 
                   alt="RIAM Sports" 
@@ -99,7 +99,7 @@ export async function Navigation() {
       <nav className="bg-white shadow-lg border-b-2 border-[#1E3A5F] sticky top-0 z-50 backdrop-blur-sm bg-white/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
-            <Link href="/book" className="flex items-center space-x-2 sm:space-x-3 group">
+            <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
               <img src="/Riamlogo.png" alt="RIAM Sports" className="h-10 w-10 sm:h-12 sm:w-14 object-contain" />
               <div className="hidden sm:block">
                 <div className="text-xl font-bold text-[#1E3A5F] leading-tight">RIAM Sports</div>

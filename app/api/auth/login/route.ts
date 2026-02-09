@@ -29,7 +29,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const callbackUrl = `${origin}/api/auth/callback`;
+  const nextPath = isValidRedirect(redirectParam) ? redirectParam : '/book';
+  const callbackUrl = `${origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

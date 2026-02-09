@@ -1,5 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import { env } from '@/lib/env';
+
+function safeRedirectPath(path: string | null): string | null {
+  if (!path || typeof path !== 'string') return null;
+  const trimmed = path.trim();
+  return trimmed.startsWith('/') && !trimmed.startsWith('//') ? trimmed : null;
+}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -18,13 +25,35 @@ export async function GET(request: Request) {
   }
 
   if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    // Collect cookies so we can set them on the final redirect response.
+    // Using response-based cookie handling ensures session cookies are set even when
+    // returning a custom redirect (fixes intermittent "session lost after login" on production).
+    const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
-    if (error) {
-      console.error('Error exchanging code for session:', error);
+    const supabase = createServerClient(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return request.headers.get('cookie')?.split(';').map((c) => {
+              const [name, ...v] = c.trim().split('=');
+              return { name, value: v.join('=').trim() };
+            }) ?? [];
+          },
+          setAll(cookies) {
+            cookies.forEach((c) => cookiesToSet.push(c));
+          },
+        },
+      }
+    );
+
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (exchangeError) {
+      console.error('Error exchanging code for session:', exchangeError);
       return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent(error.message)}`
+        `${origin}/login?error=${encodeURIComponent(exchangeError.message)}`
       );
     }
 
@@ -53,20 +82,28 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     const profile = profileData as { mobile_number: string | null } | null;
+
+    // Redirect: next query param (most reliable) > auth_redirect cookie > /book
+    const nextParam = safeRedirectPath(requestUrl.searchParams.get('next'));
+    const redirectCookie = request.headers.get('cookie')?.split(';').find((c) => c.trim().startsWith('auth_redirect='));
+    const cookiePath = redirectCookie?.split('=')[1]?.trim();
+    const redirectPath = nextParam ?? safeRedirectPath(cookiePath ?? null);
+
+    let destination: string;
     if (!profile || !profile.mobile_number) {
-      return NextResponse.redirect(`${origin}/complete-profile`);
+      destination = `${origin}/complete-profile`;
+    } else if (userIsAdminOrSubAdmin) {
+      destination = `${origin}/admin`;
+    } else {
+      destination = `${origin}${redirectPath || '/book'}`;
     }
 
-    // If admin or sub-admin, redirect to admin panel, otherwise respect auth_redirect or /book
-    const redirectCookie = request.headers.get('cookie')?.split(';').find(c => c.trim().startsWith('auth_redirect='));
-    const redirectPath = redirectCookie?.split('=')[1]?.trim();
-    const safeRedirect = redirectPath?.startsWith('/') && !redirectPath.startsWith('//') ? redirectPath : null;
-
-    const destination = userIsAdminOrSubAdmin
-      ? `${origin}/admin`
-      : `${origin}${safeRedirect || '/book'}`;
     const response = NextResponse.redirect(destination);
+    cookiesToSet.forEach(({ name, value, options }) =>
+      response.cookies.set(name, value, options)
+    );
     response.cookies.set('auth_redirect', '', { maxAge: 0, path: '/' });
+
     return response;
   }
 

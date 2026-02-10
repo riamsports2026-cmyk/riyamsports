@@ -1,9 +1,8 @@
 /**
- * Next.js Middleware for route protection and authentication
- * 
- * Note: The deprecation warning about "middleware" vs "proxy" is a false positive.
- * middleware.ts is the correct and standard approach for Next.js 16+.
- * This file handles:
+ * Next.js 16 Proxy - route protection and authentication
+ * (Migrated from middleware.ts per Next.js 16 convention)
+ *
+ * Handles:
  * - Authentication checks
  * - Route protection (admin, staff, customer)
  * - Profile completion redirects
@@ -13,7 +12,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', pathname);
@@ -55,7 +54,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Skip middleware for API routes (except auth routes which are already handled)
+  // Skip proxy for API routes (except auth routes which are already handled)
   // API routes should handle their own authentication and return JSON errors
   if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
     return response;
@@ -212,7 +211,7 @@ export async function middleware(request: NextRequest) {
 
   return response;
   } catch (err) {
-    console.error('[middleware]', err);
+    console.error('[proxy]', err);
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 }
@@ -222,4 +221,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json|ico|txt)$).*)',
   ],
 };
-

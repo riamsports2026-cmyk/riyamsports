@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next';
 
 const nextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Increase limit for image uploads
+    },
+  },
   images: {
     remotePatterns: [
       {
@@ -12,9 +17,6 @@ const nextConfig = {
         hostname: 'res.cloudinary.com',
       },
     ],
-  },
-  serverActions: {
-    bodySizeLimit: '10mb', // Increase limit for image uploads
   },
   async headers() {
     return [

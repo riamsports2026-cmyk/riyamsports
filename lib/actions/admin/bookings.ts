@@ -139,8 +139,25 @@ export async function getAllBookings(filters?: {
     });
   }
 
+  // Attach customer profiles for display
+  const userIds = [...new Set((filteredData as any[]).map((b: any) => b.user_id).filter(Boolean))];
+  let profileMap: Record<string, { full_name: string | null; mobile_number: string | null }> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await serviceClient
+      .from('profiles')
+      .select('id, full_name, mobile_number')
+      .in('id', userIds);
+    if (profiles) {
+      profileMap = Object.fromEntries((profiles as any[]).map((p: any) => [p.id, { full_name: p.full_name ?? null, mobile_number: p.mobile_number ?? null }]));
+    }
+  }
+  const dataWithProfile = (filteredData as any[]).map((b: any) => ({
+    ...b,
+    profile: b.user_id ? profileMap[b.user_id] ?? null : null,
+  }));
+
   return {
-    data: filteredData as BookingWithDetails[],
+    data: dataWithProfile as BookingWithDetails[],
     total,
     page,
     totalPages,

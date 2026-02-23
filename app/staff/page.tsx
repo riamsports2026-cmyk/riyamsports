@@ -83,6 +83,18 @@ export default async function StaffDashboard({
                         Booking #{booking.booking_id}
                       </h3>
                       <div className="mt-2 text-sm text-gray-700 space-y-1.5">
+                        {(booking as any).profile && (
+                          <>
+                            <p>
+                              <span className="font-semibold text-[#1E3A5F]">👤 Customer:</span>{' '}
+                              <span className="text-gray-700">{(booking as any).profile.full_name ?? '—'}</span>
+                            </p>
+                            <p>
+                              <span className="font-semibold text-[#1E3A5F]">📱 Mobile:</span>{' '}
+                              <span className="text-gray-700">{(booking as any).profile.mobile_number ?? '—'}</span>
+                            </p>
+                          </>
+                        )}
                         <p>
                           <span className="font-semibold text-[#1E3A5F]">📍 Location:</span>{' '}
                           <span className="text-gray-700">{booking.turf?.location?.name}</span>

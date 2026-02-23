@@ -45,6 +45,15 @@ export default async function BookingDetailPage({
     notFound();
   }
 
+  const bookingRow = booking as { user_id: string; [key: string]: unknown };
+  const { data: profileData } = await serviceClient
+    .from('profiles')
+    .select('full_name, mobile_number')
+    .eq('id', bookingRow.user_id)
+    .single();
+  type CustomerProfile = { full_name: string | null; mobile_number: string | null };
+  const profile = (profileData ?? null) as CustomerProfile | null;
+
   type BookingRow = {
     id: string;
     booking_id?: string;
@@ -81,6 +90,21 @@ export default async function BookingDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Customer Details */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-[#1E3A5F]/10 p-6">
+            <h3 className="text-lg font-bold text-[#1E3A5F] mb-4">Customer Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Name</div>
+                <div className="font-semibold">{profile?.full_name ?? '—'}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Mobile</div>
+                <div className="font-semibold">{profile?.mobile_number ?? '—'}</div>
+              </div>
+            </div>
+          </div>
+
           {/* Booking Information */}
           <div className="bg-white rounded-xl shadow-lg border-2 border-[#1E3A5F]/10 p-6">
             <h3 className="text-lg font-bold text-[#1E3A5F] mb-4">Booking Information</h3>

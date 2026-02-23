@@ -70,6 +70,9 @@ export default async function AdminBookingsPage({
                   Booking ID
                 </th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-4 lg:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                   Location & Service
                 </th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
@@ -114,6 +117,12 @@ export default async function AdminBookingsPage({
                 <tr key={booking.id} className="hover:bg-[#FF6B35]/5 transition-colors">
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-bold text-[#1E3A5F]">
                     #{booking.booking_id}
+                  </td>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <div>
+                      <div className="font-semibold text-[#1E3A5F]">{(booking as any).profile?.full_name ?? '—'}</div>
+                      <div className="text-xs text-gray-600">{(booking as any).profile?.mobile_number ?? '—'}</div>
+                    </div>
                   </td>
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     <div>
@@ -209,6 +218,11 @@ export default async function AdminBookingsPage({
                 <p className="text-xs text-gray-500 mt-1">
                   {booking.turf?.location?.name}
                 </p>
+                {(booking as any).profile && (
+                  <p className="text-xs text-[#1E3A5F] font-medium mt-1">
+                    👤 {(booking as any).profile.full_name ?? '—'} · {(booking as any).profile.mobile_number ?? '—'}
+                  </p>
+                )}
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

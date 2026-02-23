@@ -221,10 +221,27 @@ export async function getStaffBookings(filters?: {
   // But for performance, we'll use the count from the query and adjust if needed
   const totalPages = Math.ceil(total / limit);
 
+  // Fetch customer profiles for display
+  const userIds = [...new Set((filteredBookings as any[]).map((b: any) => b.user_id).filter(Boolean))];
+  let profileMap: Record<string, { full_name: string | null; mobile_number: string | null }> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await serviceClient
+      .from('profiles')
+      .select('id, full_name, mobile_number')
+      .in('id', userIds);
+    if (profiles) {
+      profileMap = Object.fromEntries((profiles as any[]).map((p: any) => [p.id, { full_name: p.full_name ?? null, mobile_number: p.mobile_number ?? null }]));
+    }
+  }
+  const bookingsWithProfile = (filteredBookings as any[]).map((b: any) => ({
+    ...b,
+    profile: b.user_id ? profileMap[b.user_id] ?? null : null,
+  }));
+
   console.log(`[getStaffBookings] Returning ${filteredBookings.length} booking(s) after filtering (total: ${total}, page: ${page}, totalPages: ${totalPages})`);
   
   return {
-    data: filteredBookings as BookingWithDetails[],
+    data: bookingsWithProfile as BookingWithDetails[],
     total,
     page,
     totalPages,

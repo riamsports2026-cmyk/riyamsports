@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { TurfWithDetails } from '@/lib/types';
 
 export async function getTurfs(locationId: string, serviceId?: string) {
@@ -56,7 +56,7 @@ export async function getAvailableSlots(
   turfId: string,
   date: string
 ): Promise<number[]> {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   // Only confirmed and pending_payment bookings hold slots. Cancelled/completed do not — slots are available to others.
   const { data: bookings } = await supabase

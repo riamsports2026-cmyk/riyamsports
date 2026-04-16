@@ -240,6 +240,30 @@ export async function createBooking(
       }
     }
 
+    // Check if slots are already booked by others to prevent overlapping bookings
+    const { data: existingBookings, error: existingBookingsError } = await serviceClient
+      .from('bookings')
+      .select('booking_slots(hour)')
+      .eq('turf_id', validated.turf_id)
+      .eq('booking_date', validated.booking_date)
+      .in('booking_status', ['confirmed', 'pending_payment']);
+
+    if (existingBookingsError) {
+      return { error: 'Failed to verify slot availability' };
+    }
+
+    const bookedHours = new Set<number>();
+    existingBookings?.forEach((booking: any) => {
+      booking.booking_slots?.forEach((slot: any) => {
+        bookedHours.add(slot.hour);
+      });
+    });
+
+    const unavailableSlots = validated.selected_hours.filter((hour) => bookedHours.has(hour));
+    if (unavailableSlots.length > 0) {
+      return { error: 'One or more selected time slots have already been booked by another user. Please select different slots.' };
+    }
+
     // Get turf pricing
     const { data: turf, error: turfError } = await serviceClient
       .from('turfs')

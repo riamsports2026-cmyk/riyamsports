@@ -7,6 +7,41 @@ export function safeRedirectPath(path: string | null | undefined): string | null
   return trimmed;
 }
 
+export function isDeepBookPath(path: string | null | undefined): boolean {
+  return !!path && path.startsWith('/book/');
+}
+
+export function parseAuthRedirectCookie(cookieHeader: string | null): string | null {
+  if (!cookieHeader) return null;
+  const entry = cookieHeader
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith('auth_redirect='));
+  if (!entry) return null;
+  const value = entry.slice('auth_redirect='.length);
+  try {
+    return safeRedirectPath(decodeURIComponent(value));
+  } catch {
+    return safeRedirectPath(value);
+  }
+}
+
+/** Prefer a specific /book/location/service path over generic /book. */
+export function resolvePostLoginRedirect(
+  nextParam: string | null | undefined,
+  cookieParam: string | null | undefined
+): string {
+  const next = safeRedirectPath(nextParam);
+  const cookie = safeRedirectPath(cookieParam);
+
+  if (isDeepBookPath(next)) return next!;
+  if (isDeepBookPath(cookie)) return cookie!;
+
+  const candidates = [next, cookie].filter(Boolean) as string[];
+  const nonGeneric = candidates.find((p) => p !== '/book' && p !== '/');
+  return nonGeneric || next || cookie || '/book';
+}
+
 export const AUTH_REDIRECT_STORAGE_KEY = 'riam_auth_redirect';
 
 export function saveAuthRedirect(path: string): void {

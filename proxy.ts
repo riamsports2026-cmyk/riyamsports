@@ -12,6 +12,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
 import { isGuestPublicRoute } from '@/lib/utils/public-routes';
+import { resolvePostLoginRedirect } from '@/lib/utils/auth-redirect';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -113,7 +114,12 @@ export async function proxy(request: NextRequest) {
           }
           return NextResponse.redirect(completeUrl);
         }
-        return NextResponse.redirect(new URL(safeRedirect || '/book', request.url));
+        return NextResponse.redirect(
+          new URL(
+            resolvePostLoginRedirect(safeRedirect, null),
+            request.url
+          )
+        );
       }
     }
     return response;

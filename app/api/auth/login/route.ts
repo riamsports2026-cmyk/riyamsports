@@ -30,7 +30,8 @@ export async function GET(request: Request) {
   }
 
   const nextPath = isValidRedirect(redirectParam) ? redirectParam : '/book';
-  const callbackUrl = `${origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  // Supabase allow-list matches this exact URL; store return path in auth_redirect cookie
+  const callbackUrl = `${origin}/api/auth/callback`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -47,15 +48,13 @@ export async function GET(request: Request) {
 
   if (data.url) {
     const response = NextResponse.redirect(data.url);
-    if (isValidRedirect(redirectParam)) {
-      response.cookies.set('auth_redirect', redirectParam, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 10,
-        path: '/',
-      });
-    }
+    response.cookies.set('auth_redirect', nextPath, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 10,
+      path: '/',
+    });
     return response;
   }
 

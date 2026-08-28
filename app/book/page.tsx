@@ -2,6 +2,7 @@ import { getLocations } from '@/lib/actions/locations';
 import { getServices } from '@/lib/actions/services';
 import { Metadata } from 'next';
 import { BookLocationSelector } from '@/components/book-location-selector';
+import { PostLoginReturn } from '@/components/post-login-return';
 
 export const metadata: Metadata = {
   title: 'Book Turf | RIAM Sports',
@@ -21,6 +22,7 @@ export default async function BookPage({
 
   return (
     <div className="min-h-screen bg-linear-to-br from-[#F5F7FA] via-white to-[#FF6B35]/5 py-8">
+      <PostLoginReturn />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <BookLocationSelector
           locations={locations}

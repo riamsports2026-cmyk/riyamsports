@@ -4,6 +4,7 @@ export type BookingDraft = {
   selectedHours: number[];
   paymentType: 'advance' | 'full';
   resumeAfterLogin: boolean;
+  returnPath: string;
 };
 
 const STORAGE_KEY = 'riam_pending_booking';
@@ -27,7 +28,10 @@ export function loadBookingDraft(): BookingDraft | null {
     ) {
       return null;
     }
-    return parsed;
+    return {
+      ...parsed,
+      returnPath: parsed.returnPath || '',
+    };
   } catch {
     return null;
   }

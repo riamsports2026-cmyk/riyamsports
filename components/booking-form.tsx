@@ -191,6 +191,7 @@ export function BookingForm({
       selectedHours,
       paymentType,
       resumeAfterLogin: true,
+      returnPath: bookingPath,
     });
     saveAuthRedirect(bookingPath);
     router.push(`/login?redirect=${encodeURIComponent(bookingPath)}`);

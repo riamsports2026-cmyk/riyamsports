@@ -1,6 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
+import {
+  parseAuthRedirectCookie,
+  resolvePostLoginRedirect,
+} from '@/lib/utils/auth-redirect';
 
 function safeRedirectPath(path: string | null): string | null {
   if (!path || typeof path !== 'string') return null;
@@ -83,11 +87,10 @@ export async function GET(request: Request) {
 
     const profile = profileData as { mobile_number: string | null } | null;
 
-    // Redirect: next query param (most reliable) > auth_redirect cookie > /book
-    const nextParam = safeRedirectPath(requestUrl.searchParams.get('next'));
-    const redirectCookie = request.headers.get('cookie')?.split(';').find((c) => c.trim().startsWith('auth_redirect='));
-    const cookiePath = redirectCookie?.split('=')[1]?.trim();
-    const redirectPath = nextParam ?? safeRedirectPath(cookiePath ?? null);
+    const redirectPath = resolvePostLoginRedirect(
+      requestUrl.searchParams.get('next'),
+      parseAuthRedirectCookie(request.headers.get('cookie'))
+    );
 
     let destination: string;
     if (!profile || !profile.mobile_number) {

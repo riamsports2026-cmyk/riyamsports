@@ -5,10 +5,6 @@ import { env } from '@/lib/env';
 export function createClient() {
   return createBrowserClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      // Fresh client per call avoids stale PKCE state in normal browser tabs
-      isSingleton: false,
-    }
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 }

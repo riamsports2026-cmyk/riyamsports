@@ -9,8 +9,17 @@ If you sign in on **localhost** but land on **https://booking.riamsportsarena.co
 2. **Redirect URLs** — add **all** of these:
 
    ```
+   http://localhost:3000/auth/callback
    http://localhost:3000/api/auth/callback
+   https://booking.riamsportsarena.com/auth/callback
    https://booking.riamsportsarena.com/api/auth/callback
+   ```
+
+   For Netlify deploy previews, add each preview URL you test (or a wildcard if your plan supports it):
+
+   ```
+   https://YOUR-PREVIEW--riamsports.netlify.app/auth/callback
+   https://YOUR-PREVIEW--riamsports.netlify.app/api/auth/callback
    ```
 
    Optional wildcard for local dev:
@@ -27,20 +36,16 @@ If you sign in on **localhost** but land on **https://booking.riamsportsarena.co
 
    (Do not set Site URL to localhost unless you only develop locally.)
 
-4. Save, then restart `npm run dev` and try sign-in again in an incognito window.
+4. Save, clear site cookies (or use incognito), then try sign-in again.
 
 ## How our app works
 
-- OAuth starts at `/api/auth/login` using the **current browser origin** (`http://localhost:3000` or production).
-- Callback is always `{origin}/api/auth/callback` (no query string).
-- After login, return path (e.g. `/book/location/service`) is read from the `auth_redirect` cookie.
+- Google sign-in runs **in the browser** (`Continue with Google` button).
+- PKCE verifier is stored in cookies on the **same origin** where you clicked sign-in.
+- Callback is `{origin}/auth/callback` (legacy `/api/auth/callback` forwards there).
+- After the code exchange, `/api/auth/finish-login` sends you to your booking page or profile setup.
+- Return path (e.g. `/book/location/service`) is stored in the `auth_redirect` cookie and sessionStorage.
 
 ## Verify
 
-After clicking "Continue with Google" on localhost, the terminal should log:
-
-```
-[auth/login] OAuth redirectTo (add to Supabase Auth → Redirect URLs if missing): http://localhost:3000/api/auth/callback
-```
-
-After Google, you should stay on **localhost**, not production.
+After clicking "Continue with Google", the browser should go to Google, then return to the **same host** you started on (localhost, production, or Netlify preview) — not a different domain.

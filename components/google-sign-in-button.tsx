@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
-import { clearLegacySupabaseLocalStorage } from '@/lib/utils/clear-legacy-auth-storage';
+import { clearLegacySupabaseAuthStorage } from '@/lib/utils/clear-legacy-auth-storage';
 
 interface GoogleSignInButtonProps {
   redirect?: string;
@@ -21,7 +21,7 @@ export function GoogleSignInButton({ redirect }: GoogleSignInButtonProps) {
     setLoading(true);
 
     try {
-      clearLegacySupabaseLocalStorage();
+      clearLegacySupabaseAuthStorage();
 
       const returnPath = redirect?.startsWith('/') ? redirect : '/book';
       saveAuthRedirect(returnPath);
@@ -32,18 +32,27 @@ export function GoogleSignInButton({ redirect }: GoogleSignInButtonProps) {
       );
 
       const supabase = createClient();
-      const callbackUrl = `${window.location.origin}/api/auth/callback`;
+      const callbackUrl = `${window.location.origin}/auth/callback`;
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
         window.location.href = `/login?error=${encodeURIComponent(error.message)}`;
+        return;
       }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      window.location.href = '/login?error=' + encodeURIComponent('Could not start Google sign-in');
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Sign-in failed. Please try again.';

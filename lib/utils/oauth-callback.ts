@@ -3,11 +3,11 @@
  * Must match an entry in Supabase Dashboard → Auth → URL Configuration → Redirect URLs.
  *
  * We intentionally omit query params so only one URL per environment needs to be allow-listed
- * (e.g. http://localhost:3000/api/auth/callback). The post-login path is stored in auth_redirect cookie.
+ * (e.g. http://localhost:3000/auth/callback). Legacy /api/auth/callback forwards here.
  */
 export function getOAuthCallbackUrl(origin: string): string {
   const base = origin.replace(/\/$/, '');
-  return `${base}/api/auth/callback`;
+  return `${base}/auth/callback`;
 }
 
 export function isLocalDevOrigin(origin: string): boolean {

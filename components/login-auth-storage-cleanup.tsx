@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { clearLegacySupabaseLocalStorage } from '@/lib/utils/clear-legacy-auth-storage';
+import { clearLegacySupabaseAuthStorage } from '@/lib/utils/clear-legacy-auth-storage';
 
 /** Clears stale Supabase localStorage on login page load (fixes PKCE in normal Chrome tabs). */
 export function LoginAuthStorageCleanup() {
   useEffect(() => {
-    clearLegacySupabaseLocalStorage();
+    clearLegacySupabaseAuthStorage();
   }, []);
   return null;
 }

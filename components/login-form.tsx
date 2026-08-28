@@ -283,7 +283,7 @@ export function LoginForm({ error: urlError, redirect: urlRedirect }: LoginFormP
                   <li>
                     Add redirect URL:{' '}
                     {process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}
-                    /api/auth/callback
+                    /auth/callback
                   </li>
                 </ol>
               )}

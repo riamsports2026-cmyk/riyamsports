@@ -1,89 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  parseAuthRedirectCookie,
-  resolvePostLoginRedirect,
-} from '@/lib/utils/auth-redirect';
-import {
-  applyCookiesToResponse,
-  createRouteHandlerClient,
-  type RouteHandlerCookie,
-} from '@/lib/supabase/route-handler';
 
+/**
+ * Supabase redirect URL may point here. Forward to the client callback page
+ * so PKCE exchange runs in the browser (verifier cookie is not reliably
+ * available to the server on Netlify/CDN).
+ */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  const error = requestUrl.searchParams.get('error');
-  const errorDescription = requestUrl.searchParams.get('error_description');
-  const origin = requestUrl.origin;
-
-  if (error) {
-    const errorMessage = errorDescription || error;
-    console.error('OAuth error:', error, errorDescription);
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(errorMessage)}`
-    );
-  }
-
-  if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=No authorization code provided`);
-  }
-
-  const cookiesToSet: RouteHandlerCookie[] = [];
-  const supabase = createRouteHandlerClient(request, cookiesToSet);
-
-  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (exchangeError) {
-    console.error('Error exchanging code for session:', exchangeError);
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(exchangeError.message)}`
-    );
-  }
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    console.error('Error getting user:', userError);
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent('Failed to authenticate')}`
-    );
-  }
-
-  const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
-  const userIsAdminOrSubAdmin = await isAdminOrSubAdmin(user.id);
-
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('mobile_number')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const profile = profileData as { mobile_number: string | null } | null;
-
-  const redirectPath = resolvePostLoginRedirect(
-    requestUrl.searchParams.get('next'),
-    parseAuthRedirectCookie(request.headers.get('cookie'))
-  );
-
-  let destination: string;
-  if (!profile || !profile.mobile_number) {
-    const completeProfileUrl = new URL('/complete-profile', origin);
-    if (redirectPath) {
-      completeProfileUrl.searchParams.set('redirect', redirectPath);
-    }
-    destination = completeProfileUrl.toString();
-  } else if (userIsAdminOrSubAdmin) {
-    destination = `${origin}/admin`;
-  } else {
-    destination = `${origin}${redirectPath || '/book'}`;
-  }
-
-  const response = NextResponse.redirect(destination);
-  applyCookiesToResponse(response, cookiesToSet);
-  response.cookies.set('auth_redirect', '', { maxAge: 0, path: '/' });
-
-  return response;
+  const clientCallback = new URL('/auth/callback', requestUrl.origin);
+  clientCallback.search = requestUrl.search;
+  return NextResponse.redirect(clientCallback);
 }

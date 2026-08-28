@@ -28,7 +28,9 @@ export async function proxy(request: NextRequest) {
   // OAuth routes must never call getUser() — it can clear PKCE verifier cookies
   if (
     pathname.startsWith('/api/auth/callback') ||
-    pathname.startsWith('/api/auth/prepare-redirect')
+    pathname.startsWith('/api/auth/prepare-redirect') ||
+    pathname.startsWith('/api/auth/finish-login') ||
+    pathname.startsWith('/auth/callback')
   ) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
@@ -49,9 +51,9 @@ export async function proxy(request: NextRequest) {
 
     // OAuth code landed on wrong page — forward to callback BEFORE any session refresh
     const oauthCode = request.nextUrl.searchParams.get('code');
-    if (oauthCode && !pathname.startsWith('/api/auth/callback')) {
+    if (oauthCode && !pathname.startsWith('/auth/callback')) {
       const rewriteUrl = request.nextUrl.clone();
-      rewriteUrl.pathname = '/api/auth/callback';
+      rewriteUrl.pathname = '/auth/callback';
       return NextResponse.rewrite(rewriteUrl);
     }
 

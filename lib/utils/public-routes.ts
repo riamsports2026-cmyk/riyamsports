@@ -17,6 +17,7 @@ const PUBLIC_EXACT = new Set([
 export function isPublicRoute(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;
   if (pathname.startsWith('/api/auth')) return true;
+  if (pathname.startsWith('/auth/callback')) return true;
   if (pathname === '/book' || pathname.startsWith('/book/')) return true;
   return false;
 }

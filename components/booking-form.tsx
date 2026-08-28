@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { calculateTotalAmount, calculateAdvanceAmount, calculateFullPaymentDiscount, calculateFullPaymentAmount } from '@/lib/utils/booking';
 import { saveBookingDraft, loadBookingDraft, clearBookingDraft } from '@/lib/utils/booking-draft';
 import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
-import { clearLegacySupabaseLocalStorage } from '@/lib/utils/clear-legacy-auth-storage';
+import { clearLegacySupabaseAuthStorage } from '@/lib/utils/clear-legacy-auth-storage';
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { Loader } from '@/components/ui/loader';
 
@@ -100,7 +100,7 @@ export function BookingForm({
           paymentType,
         });
         saveAuthRedirect(pathname);
-        clearLegacySupabaseLocalStorage();
+        clearLegacySupabaseAuthStorage();
         const loginUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
         router.push(loginUrl);
         return;

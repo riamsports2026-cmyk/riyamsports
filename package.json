@@ -16,8 +16,8 @@
     "assign-admin": "node scripts/assign-admin-role.js"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.5",
-    "@supabase/supabase-js": "^2.112.4",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.91.0",
     "@types/react-datepicker": "^6.2.0",
     "cloudinary": "^2.9.0",
     "date-fns": "^4.1.0",

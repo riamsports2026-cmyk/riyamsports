@@ -4,251 +4,96 @@
  *
  * Handles:
  * - Authentication checks
- * - Route protection (admin, staff, customer account routes)
- * - Public browsing for /book (login required only at booking submit)
- * - Profile completion redirects for account routes
+ * - Route protection (admin, staff, customer)
+ * - Profile completion redirects
  * - Role-based access control
  */
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
-import {
-  isPublicRoute,
-  isCustomerAuthRequiredRoute,
-  isAdminRoute,
-  isStaffRoute,
-  safeRedirectPath,
-} from '@/lib/utils/public-routes';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const oauthCode = request.nextUrl.searchParams.get('code');
-  const isOAuthReturn =
-    pathname.startsWith('/auth/callback') ||
-    (!!oauthCode && !pathname.startsWith('/api/auth/callback'));
-
   const requestHeaders = new Headers(request.headers);
-  // Navigation reads x-pathname — must be /auth/callback during OAuth so getUser() is skipped
-  requestHeaders.set(
-    'x-pathname',
-    isOAuthReturn ? '/auth/callback' : pathname
-  );
-  if (isOAuthReturn) {
-    requestHeaders.set('x-oauth-callback', '1');
-  }
-
-  // OAuth + auth API — never call getUser(); it clears PKCE verifier cookies
-  if (
-    pathname.startsWith('/api/auth/callback') ||
-    pathname.startsWith('/api/auth/prepare-redirect') ||
-    pathname.startsWith('/api/auth/finish-login') ||
-    pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/auth/callback') ||
-    isOAuthReturn
-  ) {
-    if (oauthCode && !pathname.startsWith('/auth/callback')) {
-      const rewriteUrl = request.nextUrl.clone();
-      rewriteUrl.pathname = '/auth/callback';
-      return NextResponse.rewrite(rewriteUrl, {
-        request: { headers: requestHeaders },
-      });
-    }
-    return NextResponse.next({ request: { headers: requestHeaders } });
-  }
+  requestHeaders.set('x-pathname', pathname);
 
   let response = NextResponse.next({
     request: { headers: requestHeaders },
   });
 
   try {
+    // Skip auth when Supabase env is missing (e.g. build/edge fallback)
     if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       return response;
     }
 
-    const supabase = createServerClient(
-      env.NEXT_PUBLIC_SUPABASE_URL,
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            );
-            response = NextResponse.next({
-              request: { headers: requestHeaders },
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
-          },
+  const supabase = createServerClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
         },
-      }
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    // API routes handle their own auth (except /api/auth — skipped above)
-    if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
-      return response;
-    }
-
-    // Login pages – handle already-authenticated redirects
-    if (
-      pathname === '/login' ||
-      pathname === '/admin/login' ||
-      pathname === '/staff/login' ||
-      pathname.startsWith('/api/auth')
-    ) {
-      if (user) {
-        if (pathname === '/admin/login') {
-          const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
-          if (await isAdminOrSubAdmin(user.id)) {
-            return NextResponse.redirect(new URL('/admin', request.url));
-          }
-          return response;
-        }
-        if (pathname === '/staff/login') {
-          const { isStaff } = await import('@/lib/utils/roles');
-          if (await isStaff(user.id)) {
-            return NextResponse.redirect(new URL('/staff', request.url));
-          }
-          return response;
-        }
-        if (pathname === '/login') {
-          const redirectParam = safeRedirectPath(
-            request.nextUrl.searchParams.get('redirect')
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
           );
-
-          const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
-          if (await isAdminOrSubAdmin(user.id)) {
-            return NextResponse.redirect(new URL('/admin', request.url));
-          }
-
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('mobile_number')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (!profile?.mobile_number) {
-            const completeUrl = new URL('/complete-profile', request.url);
-            if (redirectParam) {
-              completeUrl.searchParams.set('redirect', redirectParam);
-            }
-            return NextResponse.redirect(completeUrl);
-          }
-
-          return NextResponse.redirect(
-            new URL(redirectParam || '/book', request.url)
+          response = NextResponse.next({
+            request: { headers: requestHeaders },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
           );
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Skip proxy for API routes (except auth routes which are already handled)
+  // API routes should handle their own authentication and return JSON errors
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
+    return response;
+  }
+
+  // Public routes (no auth required) – home, policy pages, login
+  if (pathname === '/' || pathname === '/terms' || pathname === '/privacy' || pathname === '/refund-policy') {
+    return response;
+  }
+  if (pathname === '/login' || pathname === '/admin/login' || pathname === '/staff/login' || pathname.startsWith('/api/auth')) {
+    if (user) {
+      // If already logged in, redirect based on route and role
+      if (pathname === '/admin/login') {
+        const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
+        if (await isAdminOrSubAdmin(user.id)) {
+          return NextResponse.redirect(new URL('/admin', request.url));
         }
+        // If not admin/sub-admin, stay on login page
+        return response;
       }
-      return response;
-    }
-
-    // Public browsing routes – no auth required
-    if (isPublicRoute(pathname)) {
-      return response;
-    }
-
-    // Admin routes
-    if (isAdminRoute(pathname)) {
-      if (!user) {
-        const redirectUrl = new URL('/admin/login', request.url);
-        if (pathname !== '/admin') {
-          redirectUrl.searchParams.set('redirect', pathname);
+      if (pathname === '/staff/login') {
+        const { isStaff } = await import('@/lib/utils/roles');
+        if (await isStaff(user.id)) {
+          return NextResponse.redirect(new URL('/staff', request.url));
         }
-        return NextResponse.redirect(redirectUrl);
+        // If not staff, stay on login page
+        return response;
       }
+      if (pathname === '/login') {
+        const redirectParam = request.nextUrl.searchParams.get('redirect');
+        const safeRedirect = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : null;
 
-      const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
-      if (!(await isAdminOrSubAdmin(user.id))) {
-        return NextResponse.redirect(new URL('/admin/login', request.url));
-      }
+        const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
+        const isAdminOrSubAdminUser = await isAdminOrSubAdmin(user.id);
 
-      return response;
-    }
-
-    // Staff routes (except login, handled above)
-    if (isStaffRoute(pathname) && pathname !== '/staff/login') {
-      if (!user) {
-        const redirectUrl = new URL('/staff/login', request.url);
-        redirectUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(redirectUrl);
-      }
-
-      const { createServiceClient } = await import('@/lib/supabase/server');
-      const serviceClient = await createServiceClient();
-
-      const { data: adminRoles } = await serviceClient
-        .from('user_roles')
-        .select('roles(name)')
-        .eq('user_id', user.id);
-
-      const isAdmin = adminRoles?.some((ur: { roles?: { name?: string } }) => ur.roles?.name === 'admin');
-
-      if (!isAdmin) {
-        const { data: allRoles } = await serviceClient
-          .from('user_roles')
-          .select('role_id')
-          .eq('user_id', user.id);
-
-        const { data: locationRoles } = await serviceClient
-          .from('user_role_locations')
-          .select('role_id')
-          .eq('user_id', user.id);
-
-        const roleIds = [
-          ...(allRoles?.map((r: { role_id: string }) => r.role_id) || []),
-          ...(locationRoles?.map((r: { role_id: string }) => r.role_id) || []),
-        ];
-
-        let hasStaffPermission = false;
-        if (roleIds.length > 0) {
-          const { data: permission, error: permissionError } = await serviceClient
-            .from('permissions')
-            .select('id')
-            .eq('name', 'manage_bookings')
-            .maybeSingle();
-
-          if (permission && !permissionError) {
-            const permissionId = (permission as { id: string }).id;
-            const { data: rolePermissions } = await serviceClient
-              .from('role_permissions')
-              .select('role_id')
-              .in('role_id', roleIds)
-              .eq('permission_id', permissionId)
-              .limit(1);
-
-            hasStaffPermission = (rolePermissions?.length || 0) > 0;
-          }
+        if (isAdminOrSubAdminUser) {
+          return NextResponse.redirect(new URL('/admin', request.url));
         }
 
-        if (!hasStaffPermission) {
-          return NextResponse.redirect(
-            new URL('/staff/login?error=no_permission', request.url)
-          );
-        }
-      }
-
-      return response;
-    }
-
-    // Customer account routes – require sign-in
-    if (isCustomerAuthRequiredRoute(pathname)) {
-      if (!user) {
-        const redirectUrl = new URL('/login', request.url);
-        redirectUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(redirectUrl);
-      }
-
-      // Profile completion required before account/booking management routes
-      if (pathname !== '/complete-profile') {
         const { data: profile } = await supabase
           .from('profiles')
           .select('mobile_number')
@@ -256,17 +101,115 @@ export async function proxy(request: NextRequest) {
           .maybeSingle();
 
         if (!profile?.mobile_number) {
-          const completeUrl = new URL('/complete-profile', request.url);
-          completeUrl.searchParams.set('redirect', pathname);
-          return NextResponse.redirect(completeUrl);
+          return NextResponse.redirect(new URL('/complete-profile', request.url));
+        }
+        return NextResponse.redirect(new URL(safeRedirect || '/book', request.url));
+      }
+    }
+    return response;
+  }
+
+  // Protected routes
+  if (!user) {
+    // Redirect to appropriate login page based on route
+    let loginPath = '/login';
+    if (pathname.startsWith('/admin')) {
+      loginPath = '/admin/login';
+    } else if (pathname.startsWith('/staff')) {
+      loginPath = '/staff/login';
+    }
+    const redirectUrl = new URL(loginPath, request.url);
+    // Only add redirect param when destination is not /book (default after login)
+    if (pathname !== '/book') {
+      redirectUrl.searchParams.set('redirect', pathname);
+    }
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Check profile completion
+  if (pathname !== '/complete-profile') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('mobile_number')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.mobile_number) {
+      return NextResponse.redirect(new URL('/complete-profile', request.url));
+    }
+  }
+
+  // Admin routes protection (allow admin and sub-admins)
+  if (pathname.startsWith('/admin')) {
+    const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
+    
+    if (!(await isAdminOrSubAdmin(user.id))) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+  }
+
+  // Staff routes protection (except login page)
+  if (pathname.startsWith('/staff') && pathname !== '/staff/login') {
+    // Use service client to check permissions (bypass RLS)
+    // This matches the check in lib/actions/auth/staff.ts
+    const { createServiceClient } = await import('@/lib/supabase/server');
+    const serviceClient = await createServiceClient();
+    
+    // Check if user is admin
+    const { data: adminRoles } = await serviceClient
+      .from('user_roles')
+      .select('roles(name)')
+      .eq('user_id', user.id);
+    
+    const isAdmin = adminRoles?.some((ur: any) => ur.roles?.name === 'admin');
+    
+    if (!isAdmin) {
+      // Check if user has manage_bookings permission
+      const { data: allRoles } = await serviceClient
+        .from('user_roles')
+        .select('role_id')
+        .eq('user_id', user.id);
+      
+      const { data: locationRoles } = await serviceClient
+        .from('user_role_locations')
+        .select('role_id')
+        .eq('user_id', user.id);
+      
+      const roleIds = [
+        ...(allRoles?.map((r: any) => r.role_id) || []),
+        ...(locationRoles?.map((r: any) => r.role_id) || [])
+      ];
+      
+      let hasStaffPermission = false;
+      if (roleIds.length > 0) {
+        const { data: permission, error: permissionError } = await serviceClient
+          .from('permissions')
+          .select('id')
+          .eq('name', 'manage_bookings')
+          .maybeSingle();
+        
+        if (permission && !permissionError) {
+          const permissionId = (permission as { id: string }).id;
+          if (permissionId) {
+            const { data: rolePermissions } = await serviceClient
+              .from('role_permissions')
+              .select('role_id')
+              .in('role_id', roleIds)
+              .eq('permission_id', permissionId)
+              .limit(1);
+            
+            hasStaffPermission = (rolePermissions?.length || 0) > 0;
+          }
         }
       }
-
-      return response;
+      
+      if (!hasStaffPermission) {
+        return NextResponse.redirect(new URL('/staff/login?error=no_permission', request.url));
+      }
     }
+  }
 
-    // Unknown routes – allow through (404 handled by Next.js)
-    return response;
+  return response;
   } catch (err) {
     console.error('[proxy]', err);
     return NextResponse.next({ request: { headers: requestHeaders } });

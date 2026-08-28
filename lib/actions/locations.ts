@@ -17,7 +17,16 @@ function logSupabaseError(context: string, error: unknown) {
 export async function getLocations() {
   const supabase = await createClient();
 
-  // Public read: RLS policy "Everyone can view active locations" allows guests
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  // All authenticated users can see active locations
+  // RLS policy "Everyone can view active locations" handles access control
   const { data, error } = await supabase
     .from('locations')
     .select('*')
@@ -35,7 +44,16 @@ export async function getLocations() {
 export async function getLocation(id: string) {
   const supabase = await createClient();
 
-  // Public read: RLS policy allows guests to view active locations
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  // All authenticated users can see active locations
+  // RLS policy handles access control
   const { data, error } = await supabase
     .from('locations')
     .select('*')
@@ -53,6 +71,14 @@ export async function getLocation(id: string) {
 
 export async function getLocationsByService(serviceId: string) {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
 
   const locationMap = new Map();
 

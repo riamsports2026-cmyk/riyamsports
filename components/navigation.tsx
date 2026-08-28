@@ -9,20 +9,6 @@ import { MobileMenu } from '@/components/mobile-menu';
 import { DesktopNavLinks } from '@/components/desktop-nav-links';
 
 export async function Navigation() {
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || '';
-
-  // Never call getUser() on auth routes — it clears PKCE verifier cookies mid-OAuth
-  if (
-    pathname.startsWith('/staff') ||
-    pathname.startsWith('/admin') ||
-    pathname === '/login' ||
-    pathname.startsWith('/auth/') ||
-    headersList.get('x-oauth-callback') === '1'
-  ) {
-    return null;
-  }
-
   try {
     const supabase = await createClient();
     const {
@@ -34,6 +20,15 @@ export async function Navigation() {
     const userIsStaff = user ? await isStaff(user.id) : false;
     const canBook = user ? await hasPermission(user.id, 'book_turf') : false;
     const canViewBookings = user ? await hasPermission(user.id, 'view_bookings') : false;
+
+    // Get pathname to hide navigation on staff/admin/login pages (they have their own nav or don't need it)
+    const headersList = await headers();
+    const pathname = headersList.get('x-pathname') || '';
+
+    // Don't show navigation on staff, admin, or login pages
+    if (pathname.startsWith('/staff') || pathname.startsWith('/admin') || pathname === '/login') {
+      return null;
+    }
 
     return (
       <nav className="bg-white shadow-lg border-b-2 border-[#1E3A5F] sticky top-0 z-50 backdrop-blur-sm bg-white/95">
@@ -85,21 +80,13 @@ export async function Navigation() {
                   </div>
                 </>
               ) : (
-                <>
-                  <Link
-                    href="/book"
-                    className="hidden sm:inline-flex text-[#1E3A5F] hover:text-[#FF6B35] px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-[#FF6B35]/10"
-                  >
-                    Book
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="bg-linear-to-r from-[#FF6B35] to-[#FF8C61] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                  >
-                    <span className="hidden sm:inline">Sign In</span>
-                    <span className="sm:hidden">Login</span>
-                  </Link>
-                </>
+                <Link
+                  href="/login"
+                  className="bg-linear-to-r from-[#FF6B35] to-[#FF8C61] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                >
+                  <span className="hidden sm:inline">Sign In</span>
+                  <span className="sm:hidden">Login</span>
+                </Link>
               )}
             </div>
           </div>
@@ -118,9 +105,6 @@ export async function Navigation() {
                 <div className="text-xl font-bold text-[#1E3A5F] leading-tight">RIAM Sports</div>
                 {/* <div className="text-xs text-[#FF6B35] font-semibold">ARENA</div> */}
               </div>
-            </Link>
-            <Link href="/book" className="text-[#1E3A5F] hover:text-[#FF6B35] px-4 py-2 rounded-lg text-sm font-semibold">
-              Book
             </Link>
             <Link href="/login" className="text-[#1E3A5F] hover:text-[#FF6B35] px-4 py-2 rounded-lg text-sm font-semibold">
               Sign In

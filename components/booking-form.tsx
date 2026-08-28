@@ -4,13 +4,10 @@ import { createBooking } from '@/lib/actions/bookings';
 import { TurfWithDetails, Location, Service } from '@/lib/types';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { calculateTotalAmount, calculateAdvanceAmount, calculateFullPaymentDiscount, calculateFullPaymentAmount } from '@/lib/utils/booking';
-import { saveBookingDraft, loadBookingDraft, clearBookingDraft } from '@/lib/utils/booking-draft';
-import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
-import { clearLegacySupabaseAuthStorage } from '@/lib/utils/clear-legacy-auth-storage';
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { Loader } from '@/components/ui/loader';
 
@@ -25,8 +22,6 @@ interface BookingFormProps {
   turf: TurfWithDetails;
   location: Location;
   service: Service;
-  isAuthenticated: boolean;
-  hasCompleteProfile: boolean;
 }
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -52,15 +47,8 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-export function BookingForm({
-  turf,
-  location,
-  service,
-  isAuthenticated,
-  hasCompleteProfile,
-}: BookingFormProps) {
+export function BookingForm({ turf, location, service }: BookingFormProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [selectedDate, setSelectedDate] = useState(
     format(new Date(), 'yyyy-MM-dd')
   );
@@ -68,69 +56,8 @@ export function BookingForm({
   const [selectedHours, setSelectedHours] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [paymentType, setPaymentType] = useState<'advance' | 'full' | ''>('');
-  const [draftRestored, setDraftRestored] = useState(false);
 
   const [state, formAction] = useActionState(createBooking, null);
-
-  // Restore booking draft after login redirect
-  useEffect(() => {
-    if (!isAuthenticated || draftRestored) return;
-    const draft = loadBookingDraft(turf.id);
-    if (!draft) return;
-    setSelectedDate(draft.bookingDate);
-    setSelectedHours(draft.selectedHours);
-    setPaymentType(draft.paymentType);
-    setDraftRestored(true);
-    clearBookingDraft();
-  }, [isAuthenticated, turf.id, draftRestored]);
-
-  const handleFormSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      if (selectedHours.length === 0 || !paymentType) {
-        event.preventDefault();
-        return;
-      }
-
-      if (!isAuthenticated) {
-        event.preventDefault();
-        saveBookingDraft({
-          turfId: turf.id,
-          bookingDate: selectedDate,
-          selectedHours,
-          paymentType,
-        });
-        saveAuthRedirect(pathname);
-        clearLegacySupabaseAuthStorage();
-        const loginUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
-        router.push(loginUrl);
-        return;
-      }
-
-      if (!hasCompleteProfile) {
-        event.preventDefault();
-        saveBookingDraft({
-          turfId: turf.id,
-          bookingDate: selectedDate,
-          selectedHours,
-          paymentType,
-        });
-        saveAuthRedirect(pathname);
-        const completeUrl = `/complete-profile?redirect=${encodeURIComponent(pathname)}`;
-        router.push(completeUrl);
-        return;
-      }
-    },
-    [
-      isAuthenticated,
-      hasCompleteProfile,
-      selectedHours,
-      paymentType,
-      selectedDate,
-      turf.id,
-      pathname,
-      router,
-    ]
-  );
 
   useEffect(() => {
     if (state?.success) {
@@ -180,7 +107,7 @@ export function BookingForm({
         <p className="text-sm text-[#1E3A5F] font-medium">{location.name} • {service.name}</p>
       </div>
 
-      <form action={formAction} onSubmit={handleFormSubmit}>
+      <form action={formAction}>
         <input type="hidden" name="turf_id" value={turf.id} />
 
         <div className="space-y-6">
@@ -374,14 +301,6 @@ export function BookingForm({
             </div>
           )}
 
-          {draftRestored && (
-            <div className="rounded-xl bg-green-50 border-2 border-green-200 p-4">
-              <p className="text-sm font-medium text-green-800">
-                Your previous selections have been restored. Review and click Book Now to continue.
-              </p>
-            </div>
-          )}
-
           {state?.error && (
             <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4">
               <div className="flex items-start">
@@ -394,11 +313,6 @@ export function BookingForm({
           )}
 
           <SubmitButton disabled={selectedHours.length === 0 || !paymentType} />
-          {!isAuthenticated && selectedHours.length > 0 && paymentType && (
-            <p className="text-xs text-center text-gray-500 mt-2">
-              You&apos;ll be asked to sign in before completing your booking.
-            </p>
-          )}
         </div>
       </form>
     </div>

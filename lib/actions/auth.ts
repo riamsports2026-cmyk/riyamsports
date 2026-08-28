@@ -2,19 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
-import { getOAuthCallbackUrl } from '@/lib/utils/oauth-callback';
-
-async function getOAuthCallbackUrlFromRequest(): Promise<string> {
-  const headersList = await headers();
-  const host = headersList.get('x-forwarded-host') || headersList.get('host');
-  const proto = headersList.get('x-forwarded-proto') || 'http';
-  if (host) {
-    return getOAuthCallbackUrl(`${proto}://${host}`);
-  }
-  const { env } = await import('@/lib/env');
-  return getOAuthCallbackUrl(env.NEXT_PUBLIC_APP_URL);
-}
+import { env } from '@/lib/env';
 
 export async function signInWithGoogle(
   _prevState: { error?: string; success?: boolean } | null,
@@ -25,7 +13,7 @@ export async function signInWithGoogle(
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: await getOAuthCallbackUrlFromRequest(),
+      redirectTo: `${env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
     },
   });
 

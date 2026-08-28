@@ -6,13 +6,11 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { consumeAuthRedirect, peekAuthRedirect } from '@/lib/utils/auth-redirect';
 // TEMPORARILY DISABLED - Profile image upload to save Cloudinary usage
 // import { ImageUpload } from '@/components/ui/image-upload';
 
 interface CompleteProfileFormProps {
   profile: Profile | null;
-  redirect?: string;
 }
 
 function SubmitButton() {
@@ -28,20 +26,12 @@ function SubmitButton() {
   );
 }
 
-export function CompleteProfileForm({ profile, redirect: redirectProp }: CompleteProfileFormProps) {
+export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
   const router = useRouter();
+  // TEMPORARILY DISABLED - Profile image upload to save Cloudinary usage
+  // const [profileImageUrl, setProfileImageUrl] = useState<string>(profile?.profile_image || '');
   const [state, formAction] = useActionState(updateProfile, null);
   const [isAdminOrSubAdmin, setIsAdminOrSubAdmin] = useState<boolean | null>(null);
-  const [redirect, setRedirect] = useState(redirectProp);
-
-  useEffect(() => {
-    if (redirectProp?.startsWith('/')) {
-      setRedirect(redirectProp);
-      return;
-    }
-    const stored = peekAuthRedirect();
-    if (stored) setRedirect(stored);
-  }, [redirectProp]);
 
   // Check if user is admin or sub-admin
   useEffect(() => {
@@ -61,16 +51,14 @@ export function CompleteProfileForm({ profile, redirect: redirectProp }: Complet
 
   useEffect(() => {
     if (state?.success) {
-      const returnPath = redirect || consumeAuthRedirect();
+      // Redirect to admin if admin/sub-admin, otherwise to booking page
       if (isAdminOrSubAdmin) {
         router.push('/admin');
-      } else if (returnPath?.startsWith('/') && !returnPath.startsWith('//')) {
-        router.push(returnPath);
       } else {
         router.push('/book');
       }
     }
-  }, [state, router, isAdminOrSubAdmin, redirect]);
+  }, [state, router, isAdminOrSubAdmin]);
 
   const inputClass =
     'block w-full px-4 py-3 rounded-xl border-2 border-[#1E3A5F]/15 bg-white/80 placeholder-[#1E3A5F]/40 text-[#1E3A5F] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/15 focus:border-[#FF6B35] transition-all duration-200';

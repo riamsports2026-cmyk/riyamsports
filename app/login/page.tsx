@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import { LoginForm } from '@/components/login-form';
-import { LoginDevHint } from '@/components/login-dev-hint';
 import { ParticleBackground } from '@/components/ui/particle-background';
 
 export const metadata: Metadata = {
@@ -36,9 +35,8 @@ export default async function LoginPage({
               RIAM Sports
             </h1>
             {/* <p className="mt-1.5 text-[#1E3A5F] font-semibold text-base sm:text-lg">ARENA</p> */}
-            <p className="mt-1 text-[#1E3A5F]/70 text-sm sm:text-base">Sign in to complete your booking</p>
+            <p className="mt-1 text-[#1E3A5F]/70 text-sm sm:text-base">Turf Booking System</p>
           </div>
-          <LoginDevHint />
           <LoginForm error={params.error} redirect={params.redirect} />
         </div>
       </div>

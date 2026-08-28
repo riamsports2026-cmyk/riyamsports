@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { LoginForm } from '@/components/login-form';
 import { LoginDevHint } from '@/components/login-dev-hint';
+import { LoginAuthStorageCleanup } from '@/components/login-auth-storage-cleanup';
 import { ParticleBackground } from '@/components/ui/particle-background';
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default async function LoginPage({
       <ParticleBackground />
 
       <div className="relative z-10 w-full max-w-md">
+        <LoginAuthStorageCleanup />
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[0_8px_32px_rgba(30,58,95,0.08),0_0_0_1px_rgba(30,58,95,0.04)] border border-[#1E3A5F]/6 p-6 sm:p-8 lg:p-10 max-h-[90vh] overflow-y-auto">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">

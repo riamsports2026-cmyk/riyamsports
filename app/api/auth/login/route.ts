@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
   const cookiesToSet: RouteHandlerCookie[] = [];
   const supabase = createRouteHandlerClient(request, cookiesToSet);
 
+  // Clear stale session/PKCE cookies so a fresh OAuth flow works in normal browser tabs
+  await supabase.auth.signOut({ scope: 'local' });
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {

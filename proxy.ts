@@ -30,6 +30,15 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', pathname);
 
+  // OAuth routes must never call getUser() — it can clear PKCE verifier cookies
+  // and breaks Google sign-in in normal browser tabs (works in incognito with no stale cookies).
+  if (
+    pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/api/auth/callback')
+  ) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   let response = NextResponse.next({
     request: { headers: requestHeaders },
   });
@@ -37,6 +46,22 @@ export async function proxy(request: NextRequest) {
   try {
     if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       return response;
+    }
+
+    // OAuth code landed on wrong page — forward to callback BEFORE any session refresh
+    const oauthCode = request.nextUrl.searchParams.get('code');
+    if (oauthCode) {
+      const callbackUrl = new URL('/api/auth/callback', request.url);
+      callbackUrl.searchParams.set('code', oauthCode);
+      const resolvedNext = resolvePostLoginRedirect(
+        request.nextUrl.searchParams.get('next'),
+        parseAuthRedirectCookie(request.headers.get('cookie') ?? null),
+        isDeepBookPath(pathname) ? pathname : null
+      );
+      if (resolvedNext) {
+        callbackUrl.searchParams.set('next', resolvedNext);
+      }
+      return NextResponse.redirect(callbackUrl);
     }
 
     const supabase = createServerClient(
@@ -66,24 +91,7 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // OAuth code sometimes lands on /book or /login instead of /api/auth/callback
-    // (e.g. Supabase Site URL mismatch). Forward to the callback handler.
-    const oauthCode = request.nextUrl.searchParams.get('code');
-    if (oauthCode && !pathname.startsWith('/api/auth/callback')) {
-      const callbackUrl = new URL('/api/auth/callback', request.url);
-      callbackUrl.searchParams.set('code', oauthCode);
-      const resolvedNext = resolvePostLoginRedirect(
-        request.nextUrl.searchParams.get('next'),
-        parseAuthRedirectCookie(request.headers.get('cookie') ?? null),
-        isDeepBookPath(pathname) ? pathname : null
-      );
-      if (resolvedNext) {
-        callbackUrl.searchParams.set('next', resolvedNext);
-      }
-      return NextResponse.redirect(callbackUrl);
-    }
-
-    // API routes handle their own auth (except /api/auth)
+    // API routes handle their own auth (except /api/auth — skipped above)
     if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
       return response;
     }

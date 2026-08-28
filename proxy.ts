@@ -22,21 +22,37 @@ import {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-pathname', pathname);
+  const oauthCode = request.nextUrl.searchParams.get('code');
+  const isOAuthReturn =
+    pathname.startsWith('/auth/callback') ||
+    (!!oauthCode && !pathname.startsWith('/api/auth/callback'));
 
-  // OAuth routes must never call getUser() — it can clear PKCE verifier cookies
+  const requestHeaders = new Headers(request.headers);
+  // Navigation reads x-pathname — must be /auth/callback during OAuth so getUser() is skipped
+  requestHeaders.set(
+    'x-pathname',
+    isOAuthReturn ? '/auth/callback' : pathname
+  );
+  if (isOAuthReturn) {
+    requestHeaders.set('x-oauth-callback', '1');
+  }
+
+  // OAuth + auth API — never call getUser(); it clears PKCE verifier cookies
   if (
     pathname.startsWith('/api/auth/callback') ||
     pathname.startsWith('/api/auth/prepare-redirect') ||
     pathname.startsWith('/api/auth/finish-login') ||
-    pathname.startsWith('/auth/callback')
+    pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/auth/callback') ||
+    isOAuthReturn
   ) {
-    return NextResponse.next({ request: { headers: requestHeaders } });
-  }
-
-  // Legacy server OAuth login — skip session refresh (prefer client-side GoogleSignInButton)
-  if (pathname.startsWith('/api/auth/login')) {
+    if (oauthCode && !pathname.startsWith('/auth/callback')) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = '/auth/callback';
+      return NextResponse.rewrite(rewriteUrl, {
+        request: { headers: requestHeaders },
+      });
+    }
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -47,14 +63,6 @@ export async function proxy(request: NextRequest) {
   try {
     if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       return response;
-    }
-
-    // OAuth code landed on wrong page — forward to callback BEFORE any session refresh
-    const oauthCode = request.nextUrl.searchParams.get('code');
-    if (oauthCode && !pathname.startsWith('/auth/callback')) {
-      const rewriteUrl = request.nextUrl.clone();
-      rewriteUrl.pathname = '/auth/callback';
-      return NextResponse.rewrite(rewriteUrl);
     }
 
     const supabase = createServerClient(

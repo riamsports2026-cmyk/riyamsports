@@ -17,7 +17,8 @@ export async function Navigation() {
     pathname.startsWith('/staff') ||
     pathname.startsWith('/admin') ||
     pathname === '/login' ||
-    pathname.startsWith('/auth/')
+    pathname.startsWith('/auth/') ||
+    headersList.get('x-oauth-callback') === '1'
   ) {
     return null;
   }

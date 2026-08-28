@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { consumeAuthRedirect } from '@/lib/utils/auth-redirect';
 
-const CALLBACK_LOCK_KEY = 'riam_oauth_callback_lock';
+function lockKey(code: string) {
+  return `riam_oauth_${code}`;
+}
 
 async function redirectAfterLogin() {
   const supabase = createClient();
@@ -36,7 +38,6 @@ async function redirectAfterLogin() {
     return;
   }
 
-  // Admin check needs server cookies — retry briefly after client session is set
   for (let attempt = 0; attempt < 5; attempt++) {
     const res = await fetch('/api/check-admin', { credentials: 'same-origin' });
     if (res.ok) {
@@ -51,6 +52,17 @@ async function redirectAfterLogin() {
   }
 
   window.location.replace(redirectPath);
+}
+
+async function waitForOAuthLock(code: string): Promise<'done' | 'timeout'> {
+  const key = lockKey(code);
+  for (let i = 0; i < 40; i++) {
+    const state = sessionStorage.getItem(key);
+    if (state === 'done') return 'done';
+    if (state !== 'processing') return 'timeout';
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return 'timeout';
 }
 
 /**
@@ -78,32 +90,44 @@ export function AuthCallbackHandler() {
       }
 
       const supabase = createClient();
+      const key = lockKey(code);
+      const existing = sessionStorage.getItem(key);
 
-      // Prevent double exchange (React Strict Mode remounts the component)
-      const lockValue = sessionStorage.getItem(CALLBACK_LOCK_KEY);
-      if (lockValue === code) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
+      if (existing === 'done') {
+        await redirectAfterLogin();
+        return;
+      }
+
+      if (existing === 'processing') {
+        const result = await waitForOAuthLock(code);
+        if (result === 'done') {
           await redirectAfterLogin();
         }
         return;
       }
-      sessionStorage.setItem(CALLBACK_LOCK_KEY, code);
+
+      sessionStorage.setItem(key, 'processing');
 
       const { error: exchangeError } =
         await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError) {
-        sessionStorage.removeItem(CALLBACK_LOCK_KEY);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          sessionStorage.setItem(key, 'done');
+          await redirectAfterLogin();
+          return;
+        }
+        sessionStorage.removeItem(key);
         window.location.replace(
           `/login?error=${encodeURIComponent(exchangeError.message)}`
         );
         return;
       }
 
-      sessionStorage.removeItem(CALLBACK_LOCK_KEY);
+      sessionStorage.setItem(key, 'done');
       await redirectAfterLogin();
     }
 

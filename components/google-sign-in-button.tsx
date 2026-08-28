@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
-import { clearLegacySupabaseAuthStorage } from '@/lib/utils/clear-legacy-auth-storage';
 
 interface GoogleSignInButtonProps {
   redirect?: string;
@@ -21,8 +20,6 @@ export function GoogleSignInButton({ redirect }: GoogleSignInButtonProps) {
     setLoading(true);
 
     try {
-      clearLegacySupabaseAuthStorage();
-
       const returnPath = redirect?.startsWith('/') ? redirect : '/book';
       saveAuthRedirect(returnPath);
 
@@ -38,11 +35,17 @@ export function GoogleSignInButton({ redirect }: GoogleSignInButtonProps) {
         provider: 'google',
         options: {
           redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
         window.location.href = `/login?error=${encodeURIComponent(error.message)}`;
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (err) {
       const message =

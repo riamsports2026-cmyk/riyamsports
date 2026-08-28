@@ -38,21 +38,12 @@ export function GoogleSignInButton({ redirect }: GoogleSignInButtonProps) {
         provider: 'google',
         options: {
           redirectTo: callbackUrl,
-          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
         window.location.href = `/login?error=${encodeURIComponent(error.message)}`;
-        return;
       }
-
-      if (data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      window.location.href = '/login?error=' + encodeURIComponent('Could not start Google sign-in');
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Sign-in failed. Please try again.';

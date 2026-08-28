@@ -1,6 +1,6 @@
 /**
- * Remove legacy Supabase localStorage entries and stale auth cookies from
- * older flows. Mixed storage causes "PKCE code verifier not found" errors.
+ * Remove legacy Supabase localStorage entries from older auth flows.
+ * Do not clear sb-* cookies here — that removes the PKCE verifier mid-OAuth.
  */
 export function clearLegacySupabaseAuthStorage(): void {
   if (typeof window === 'undefined') return;
@@ -16,20 +16,6 @@ export function clearLegacySupabaseAuthStorage(): void {
     keysToRemove.forEach((key) => localStorage.removeItem(key));
   } catch {
     // ignore private browsing / storage errors
-  }
-
-  try {
-    const cookieNames = document.cookie
-      .split(';')
-      .map((part) => part.trim().split('=')[0])
-      .filter((name) => name.startsWith('sb-'));
-
-    cookieNames.forEach((name) => {
-      document.cookie = `${name}=; Max-Age=0; path=/`;
-      document.cookie = `${name}=; Max-Age=0; path=/; domain=${window.location.hostname}`;
-    });
-  } catch {
-    // ignore
   }
 }
 

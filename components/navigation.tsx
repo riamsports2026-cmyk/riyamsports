@@ -9,6 +9,19 @@ import { MobileMenu } from '@/components/mobile-menu';
 import { DesktopNavLinks } from '@/components/desktop-nav-links';
 
 export async function Navigation() {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+
+  // Never call getUser() on auth routes — it clears PKCE verifier cookies mid-OAuth
+  if (
+    pathname.startsWith('/staff') ||
+    pathname.startsWith('/admin') ||
+    pathname === '/login' ||
+    pathname.startsWith('/auth/')
+  ) {
+    return null;
+  }
+
   try {
     const supabase = await createClient();
     const {
@@ -20,15 +33,6 @@ export async function Navigation() {
     const userIsStaff = user ? await isStaff(user.id) : false;
     const canBook = user ? await hasPermission(user.id, 'book_turf') : false;
     const canViewBookings = user ? await hasPermission(user.id, 'view_bookings') : false;
-
-    // Get pathname to hide navigation on staff/admin/login pages (they have their own nav or don't need it)
-    const headersList = await headers();
-    const pathname = headersList.get('x-pathname') || '';
-
-    // Don't show navigation on staff, admin, or login pages
-    if (pathname.startsWith('/staff') || pathname.startsWith('/admin') || pathname === '/login') {
-      return null;
-    }
 
     return (
       <nav className="bg-white shadow-lg border-b-2 border-[#1E3A5F] sticky top-0 z-50 backdrop-blur-sm bg-white/95">

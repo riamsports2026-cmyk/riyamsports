@@ -5,7 +5,7 @@ export async function Footer() {
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || '';
 
-  if (pathname.startsWith('/staff') || pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/staff') || pathname.startsWith('/admin') || pathname.startsWith('/auth/')) {
     return null;
   }
 

@@ -1,19 +1,15 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+
+const CALLBACK_LOCK_KEY = 'riam_oauth_callback_lock';
 
 /**
  * Exchanges the OAuth code in the browser where the PKCE verifier cookie lives.
- * Server-side exchange often fails on Netlify/CDN hosts.
  */
 export function AuthCallbackHandler() {
-  const started = useRef(false);
-
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-
     async function completeAuth() {
       const params = new URLSearchParams(window.location.search);
       const error = params.get('error');
@@ -33,17 +29,24 @@ export function AuthCallbackHandler() {
         return;
       }
 
+      // Prevent double exchange (React Strict Mode remounts the component)
+      const lockValue = sessionStorage.getItem(CALLBACK_LOCK_KEY);
+      if (lockValue === code) return;
+      sessionStorage.setItem(CALLBACK_LOCK_KEY, code);
+
       const supabase = createClient();
       const { error: exchangeError } =
         await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError) {
+        sessionStorage.removeItem(CALLBACK_LOCK_KEY);
         window.location.replace(
           `/login?error=${encodeURIComponent(exchangeError.message)}`
         );
         return;
       }
 
+      sessionStorage.removeItem(CALLBACK_LOCK_KEY);
       window.location.replace('/api/auth/finish-login');
     }
 

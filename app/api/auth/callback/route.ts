@@ -91,7 +91,11 @@ export async function GET(request: Request) {
 
     let destination: string;
     if (!profile || !profile.mobile_number) {
-      destination = `${origin}/complete-profile`;
+      const completeProfileUrl = new URL('/complete-profile', origin);
+      if (redirectPath) {
+        completeProfileUrl.searchParams.set('redirect', redirectPath);
+      }
+      destination = completeProfileUrl.toString();
     } else if (userIsAdminOrSubAdmin) {
       destination = `${origin}/admin`;
     } else {

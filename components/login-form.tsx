@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
 
 interface LoginFormProps {
   error?: string;
@@ -42,7 +44,15 @@ function GoogleButton({ redirect }: { redirect?: string }) {
 
 export function LoginForm({ error: urlError, redirect }: LoginFormProps) {
   const error = urlError;
-  const isOAuthError = 
+  const isBookingLogin = redirect?.startsWith('/book');
+
+  useEffect(() => {
+    if (redirect?.startsWith('/')) {
+      saveAuthRedirect(redirect);
+    }
+  }, [redirect]);
+
+  const isOAuthError =
     error?.includes('not enabled') || 
     error?.includes('Unsupported provider') ||
     error?.includes('disabled_client') ||
@@ -53,6 +63,13 @@ export function LoginForm({ error: urlError, redirect }: LoginFormProps) {
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      {isBookingLogin && !error && (
+        <div className="mb-4 rounded-xl bg-[#FF6B35]/10 border border-[#FF6B35]/30 p-4">
+          <p className="text-sm font-medium text-[#1E3A5F]">
+            Please sign in to continue with your booking.
+          </p>
+        </div>
+      )}
       {error && (
         <div className="mb-4 rounded-xl bg-red-50/90 border border-red-200/80 p-4 shadow-sm">
           <p className="text-sm font-semibold text-red-800">{error}</p>

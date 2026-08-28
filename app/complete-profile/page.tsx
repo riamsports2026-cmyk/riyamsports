@@ -8,7 +8,12 @@ export const metadata: Metadata = {
   description: 'Complete your profile to continue',
 };
 
-export default async function CompleteProfilePage() {
+export default async function CompleteProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>;
+}) {
+  const params = await searchParams;
   const profile = await getProfile();
 
   return (
@@ -32,7 +37,7 @@ export default async function CompleteProfilePage() {
             </h1>
             <p className="mt-1.5 text-[#1E3A5F]/70 text-sm sm:text-base">We need a few details to get started</p>
           </div>
-          <CompleteProfileForm profile={profile} />
+          <CompleteProfileForm profile={profile} redirect={params.redirect} />
         </div>
       </div>
     </div>

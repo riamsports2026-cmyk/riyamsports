@@ -4,12 +4,19 @@ import { createBooking } from '@/lib/actions/bookings';
 import { TurfWithDetails, Location, Service } from '@/lib/types';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { calculateTotalAmount, calculateAdvanceAmount, calculateFullPaymentDiscount, calculateFullPaymentAmount } from '@/lib/utils/booking';
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { Loader } from '@/components/ui/loader';
+import {
+  clearBookingDraft,
+  clearResumeFlag,
+  loadBookingDraft,
+  saveBookingDraft,
+} from '@/lib/utils/booking-draft';
+import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
 
 function formatHour(hour: number): string {
   if (hour === 0) return '12am';
@@ -22,6 +29,8 @@ interface BookingFormProps {
   turf: TurfWithDetails;
   location: Location;
   service: Service;
+  isAuthenticated: boolean;
+  bookingPath: string;
 }
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -47,8 +56,15 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-export function BookingForm({ turf, location, service }: BookingFormProps) {
+export function BookingForm({
+  turf,
+  location,
+  service,
+  isAuthenticated,
+  bookingPath,
+}: BookingFormProps) {
   const router = useRouter();
+  const resumeStarted = useRef(false);
   const [selectedDate, setSelectedDate] = useState(
     format(new Date(), 'yyyy-MM-dd')
   );
@@ -56,14 +72,89 @@ export function BookingForm({ turf, location, service }: BookingFormProps) {
   const [selectedHours, setSelectedHours] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [paymentType, setPaymentType] = useState<'advance' | 'full' | ''>('');
+  const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   const [state, formAction] = useActionState(createBooking, null);
 
   useEffect(() => {
     if (state?.success) {
+      clearBookingDraft();
       router.push(`/bookings/${state.bookingId}/payment`);
     }
   }, [state, router]);
+
+  // Restore pending booking after login (OAuth redirect or email login)
+  useEffect(() => {
+    if (!isAuthenticated || resumeStarted.current) return;
+
+    const draft = loadBookingDraft();
+    if (!draft || draft.turfId !== turf.id) return;
+
+    resumeStarted.current = true;
+
+    async function resumeBooking() {
+      setSelectedDate(draft!.bookingDate);
+      setPaymentType(draft!.paymentType);
+
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/turfs/${turf.id}/slots?date=${draft!.bookingDate}`
+        );
+        const data = await response.json();
+        const slots: number[] = data.slots || [];
+        setAvailableSlots(slots);
+
+        const validHours = draft!.selectedHours.filter((h) => slots.includes(h));
+
+        if (validHours.length === 0) {
+          setResumeError(
+            'Your selected time slots are no longer available. Please choose another slot.'
+          );
+          clearBookingDraft();
+          return;
+        }
+
+        if (validHours.length < draft!.selectedHours.length) {
+          setResumeError(
+            'Some of your selected slots are no longer available. Please review and book again.'
+          );
+        }
+
+        setSelectedHours(validHours);
+
+        if (draft!.resumeAfterLogin && validHours.length > 0) {
+          clearResumeFlag();
+          const formData = new FormData();
+          formData.set('turf_id', turf.id);
+          formData.set('booking_date', draft!.bookingDate);
+          formData.set('selected_hours', JSON.stringify(validHours));
+          formData.set('payment_type', draft!.paymentType);
+
+          const result = await createBooking(null, formData);
+          if (result?.success && result.bookingId) {
+            clearBookingDraft();
+            router.push(`/bookings/${result.bookingId}/payment`);
+            return;
+          }
+          if (result?.error) {
+            setResumeError(result.error);
+          }
+        } else {
+          setRestoreMessage(
+            'Your previous selections have been restored. Review and click Book Now to continue.'
+          );
+        }
+      } catch {
+        setResumeError('Could not restore your booking. Please select your slots again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void resumeBooking();
+  }, [isAuthenticated, turf.id, router]);
 
   useEffect(() => {
     async function fetchSlots() {
@@ -75,7 +166,9 @@ export function BookingForm({ turf, location, service }: BookingFormProps) {
         const data = await response.json();
         if (data.slots) {
           setAvailableSlots(data.slots);
-          setSelectedHours([]);
+          if (!resumeStarted.current) {
+            setSelectedHours([]);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch slots:', error);
@@ -86,6 +179,22 @@ export function BookingForm({ turf, location, service }: BookingFormProps) {
 
     fetchSlots();
   }, [turf.id, selectedDate]);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (isAuthenticated) return;
+    e.preventDefault();
+    if (selectedHours.length === 0 || !paymentType) return;
+
+    saveBookingDraft({
+      turfId: turf.id,
+      bookingDate: selectedDate,
+      selectedHours,
+      paymentType,
+      resumeAfterLogin: true,
+    });
+    saveAuthRedirect(bookingPath);
+    router.push(`/login?redirect=${encodeURIComponent(bookingPath)}`);
+  };
 
   const totalAmount = calculateTotalAmount(turf.pricing, selectedHours);
   const advanceAmount = calculateAdvanceAmount(totalAmount);
@@ -107,10 +216,20 @@ export function BookingForm({ turf, location, service }: BookingFormProps) {
         <p className="text-sm text-[#1E3A5F] font-medium">{location.name} • {service.name}</p>
       </div>
 
-      <form action={formAction}>
+      <form action={formAction} onSubmit={handleSubmit}>
         <input type="hidden" name="turf_id" value={turf.id} />
 
         <div className="space-y-6">
+          {restoreMessage && (
+            <div className="rounded-xl bg-green-50 border-2 border-green-200 p-4">
+              <p className="text-sm font-medium text-green-800">{restoreMessage}</p>
+            </div>
+          )}
+          {resumeError && (
+            <div className="rounded-xl bg-amber-50 border-2 border-amber-200 p-4">
+              <p className="text-sm font-medium text-amber-900">{resumeError}</p>
+            </div>
+          )}
           <div className="bg-linear-to-br from-[#FF6B35]/10 to-[#1E3A5F]/10 border-2 border-[#FF6B35]/30 rounded-xl p-4 sm:p-5 shadow-md">
             <label
               htmlFor="booking_date"

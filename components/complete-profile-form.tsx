@@ -9,8 +9,11 @@ import { useRouter } from 'next/navigation';
 // TEMPORARILY DISABLED - Profile image upload to save Cloudinary usage
 // import { ImageUpload } from '@/components/ui/image-upload';
 
+import { safeRedirectPath } from '@/lib/utils/auth-redirect';
+
 interface CompleteProfileFormProps {
   profile: Profile | null;
+  redirect?: string;
 }
 
 function SubmitButton() {
@@ -26,7 +29,7 @@ function SubmitButton() {
   );
 }
 
-export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
+export function CompleteProfileForm({ profile, redirect }: CompleteProfileFormProps) {
   const router = useRouter();
   // TEMPORARILY DISABLED - Profile image upload to save Cloudinary usage
   // const [profileImageUrl, setProfileImageUrl] = useState<string>(profile?.profile_image || '');
@@ -55,10 +58,10 @@ export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
       if (isAdminOrSubAdmin) {
         router.push('/admin');
       } else {
-        router.push('/book');
+        router.push(safeRedirectPath(redirect) || '/book');
       }
     }
-  }, [state, router, isAdminOrSubAdmin]);
+  }, [state, router, isAdminOrSubAdmin, redirect]);
 
   const inputClass =
     'block w-full px-4 py-3 rounded-xl border-2 border-[#1E3A5F]/15 bg-white/80 placeholder-[#1E3A5F]/40 text-[#1E3A5F] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/15 focus:border-[#FF6B35] transition-all duration-200';

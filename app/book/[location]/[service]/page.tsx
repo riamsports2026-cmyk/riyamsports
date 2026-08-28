@@ -2,6 +2,7 @@ import { getLocation } from '@/lib/actions/locations';
 import { getService } from '@/lib/actions/services';
 import { getTurfs } from '@/lib/actions/turfs';
 import { autoCreateTurfForLocationService } from '@/lib/actions/admin/auto-create-turfs';
+import { createClient } from '@/lib/supabase/server';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -64,6 +65,12 @@ export default async function ServicePage({ params }: PageProps) {
     );
   }
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const bookingPath = `/book/${locId}/${svcId}`;
+
   return (
     <div className="min-h-screen bg-linear-to-br from-[#F5F7FA] via-white to-[#FF6B35]/5 py-4 sm:py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -114,6 +121,8 @@ export default async function ServicePage({ params }: PageProps) {
               turf={turf}
               location={{ ...locationData, is_active: locationData?.is_active ?? true, created_at: locationData?.created_at ?? '' }}
               service={{ ...serviceData, is_active: serviceData?.is_active ?? true, created_at: serviceData?.created_at ?? '' }}
+              isAuthenticated={!!user}
+              bookingPath={bookingPath}
             />
           ))}
         </div>

@@ -35,7 +35,11 @@ export default async function LoginPage({
               RIAM Sports
             </h1>
             {/* <p className="mt-1.5 text-[#1E3A5F] font-semibold text-base sm:text-lg">ARENA</p> */}
-            <p className="mt-1 text-[#1E3A5F]/70 text-sm sm:text-base">Turf Booking System</p>
+            <p className="mt-1 text-[#1E3A5F]/70 text-sm sm:text-base">
+              {params.redirect?.startsWith('/book')
+                ? 'Sign in to complete your booking'
+                : 'Turf Booking System'}
+            </p>
           </div>
           <LoginForm error={params.error} redirect={params.redirect} />
         </div>

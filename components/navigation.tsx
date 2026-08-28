@@ -80,13 +80,21 @@ export async function Navigation() {
                   </div>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  className="bg-linear-to-r from-[#FF6B35] to-[#FF8C61] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                >
-                  <span className="hidden sm:inline">Sign In</span>
-                  <span className="sm:hidden">Login</span>
-                </Link>
+                <>
+                  <Link
+                    href="/book"
+                    className="hidden sm:inline-flex text-[#1E3A5F] hover:text-[#FF6B35] px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-[#FF6B35]/10"
+                  >
+                    Book
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="bg-linear-to-r from-[#FF6B35] to-[#FF8C61] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                  >
+                    <span className="hidden sm:inline">Sign In</span>
+                    <span className="sm:hidden">Login</span>
+                  </Link>
+                </>
               )}
             </div>
           </div>

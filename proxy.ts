@@ -11,6 +11,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
+import { isGuestPublicRoute } from '@/lib/utils/public-routes';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -60,6 +61,11 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // Guests may browse home, policies, and booking pages without signing in
+  if (isGuestPublicRoute(pathname) && !user) {
+    return response;
+  }
+
   // Public routes (no auth required) – home, policy pages, login
   if (pathname === '/' || pathname === '/terms' || pathname === '/privacy' || pathname === '/refund-policy') {
     return response;
@@ -101,7 +107,11 @@ export async function proxy(request: NextRequest) {
           .maybeSingle();
 
         if (!profile?.mobile_number) {
-          return NextResponse.redirect(new URL('/complete-profile', request.url));
+          const completeUrl = new URL('/complete-profile', request.url);
+          if (safeRedirect) {
+            completeUrl.searchParams.set('redirect', safeRedirect);
+          }
+          return NextResponse.redirect(completeUrl);
         }
         return NextResponse.redirect(new URL(safeRedirect || '/book', request.url));
       }
@@ -109,9 +119,8 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Protected routes
+  // Protected routes (account, admin, staff)
   if (!user) {
-    // Redirect to appropriate login page based on route
     let loginPath = '/login';
     if (pathname.startsWith('/admin')) {
       loginPath = '/admin/login';
@@ -119,8 +128,7 @@ export async function proxy(request: NextRequest) {
       loginPath = '/staff/login';
     }
     const redirectUrl = new URL(loginPath, request.url);
-    // Only add redirect param when destination is not /book (default after login)
-    if (pathname !== '/book') {
+    if (pathname !== '/book' && !pathname.startsWith('/book/')) {
       redirectUrl.searchParams.set('redirect', pathname);
     }
     return NextResponse.redirect(redirectUrl);
@@ -135,7 +143,9 @@ export async function proxy(request: NextRequest) {
       .single();
 
     if (!profile?.mobile_number) {
-      return NextResponse.redirect(new URL('/complete-profile', request.url));
+      const completeUrl = new URL('/complete-profile', request.url);
+      completeUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(completeUrl);
     }
   }
 

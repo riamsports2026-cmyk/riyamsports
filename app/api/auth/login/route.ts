@@ -1,6 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getOAuthCallbackUrl } from '@/lib/utils/oauth-callback';
+import {
+  applyCookiesToResponse,
+  createRouteHandlerClient,
+  type RouteHandlerCookie,
+} from '@/lib/supabase/route-handler';
 
 function isValidRedirect(path: string | null): path is string {
   if (!path || typeof path !== 'string') return false;
@@ -8,7 +12,7 @@ function isValidRedirect(path: string | null): path is string {
   return trimmed.startsWith('/') && !trimmed.startsWith('//');
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
   const { searchParams } = requestUrl;
@@ -22,7 +26,6 @@ export async function GET(request: Request) {
   }
 
   const nextPath = isValidRedirect(redirectParam) ? redirectParam : '/book';
-  // No query params — return path is in auth_redirect cookie (see lib/utils/oauth-callback.ts)
   const callbackUrl = getOAuthCallbackUrl(origin);
 
   if (process.env.NODE_ENV === 'development') {
@@ -32,7 +35,9 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  const cookiesToSet: RouteHandlerCookie[] = [];
+  const supabase = createRouteHandlerClient(request, cookiesToSet);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -46,19 +51,20 @@ export async function GET(request: Request) {
     );
   }
 
-  if (data.url) {
-    const response = NextResponse.redirect(data.url);
-    response.cookies.set('auth_redirect', nextPath, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 10,
-      path: '/',
-    });
-    return response;
+  if (!data.url) {
+    return NextResponse.redirect(
+      new URL('/login?error=Something went wrong during sign-in.', request.url)
+    );
   }
 
-  return NextResponse.redirect(
-    new URL('/login?error=Something went wrong during sign-in.', request.url)
-  );
+  const response = NextResponse.redirect(data.url);
+  applyCookiesToResponse(response, cookiesToSet);
+  response.cookies.set('auth_redirect', nextPath, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 10,
+    path: '/',
+  });
+  return response;
 }

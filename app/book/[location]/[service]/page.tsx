@@ -2,6 +2,8 @@ import { getLocation } from '@/lib/actions/locations';
 import { getService } from '@/lib/actions/services';
 import { getTurfs } from '@/lib/actions/turfs';
 import { autoCreateTurfForLocationService } from '@/lib/actions/admin/auto-create-turfs';
+import { createClient } from '@/lib/supabase/server';
+import { getProfile } from '@/lib/actions/profile';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -42,6 +44,14 @@ export default async function ServicePage({ params }: PageProps) {
       turfs = await getTurfs(locId, svcId);
     }
   }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const profile = user ? await getProfile() : null;
+  const isAuthenticated = !!user;
+  const hasCompleteProfile = !!profile?.mobile_number;
 
   if (turfs.length === 0) {
     return (
@@ -114,6 +124,8 @@ export default async function ServicePage({ params }: PageProps) {
               turf={turf}
               location={{ ...locationData, is_active: locationData?.is_active ?? true, created_at: locationData?.created_at ?? '' }}
               service={{ ...serviceData, is_active: serviceData?.is_active ?? true, created_at: serviceData?.created_at ?? '' }}
+              isAuthenticated={isAuthenticated}
+              hasCompleteProfile={hasCompleteProfile}
             />
           ))}
         </div>

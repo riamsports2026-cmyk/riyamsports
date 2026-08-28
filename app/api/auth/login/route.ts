@@ -1,15 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getOAuthCallbackUrl } from '@/lib/utils/oauth-callback';
 
-/**
- * Start OAuth flow from a Route Handler so the PKCE code verifier is stored
- * in cookies on the redirect response. Starting from a server action can
- * miss those cookies and cause "PKCE code verifier not found" on callback.
- *
- * Uses the request origin for redirectTo so the callback goes to the same
- * host the user is on (e.g. https://riyamsports.vercel.app on Vercel),
- * instead of relying on NEXT_PUBLIC_APP_URL which may be unset or localhost.
- */
 function isValidRedirect(path: string | null): path is string {
   if (!path || typeof path !== 'string') return false;
   const trimmed = path.trim();
@@ -30,7 +22,16 @@ export async function GET(request: Request) {
   }
 
   const nextPath = isValidRedirect(redirectParam) ? redirectParam : '/book';
-  const callbackUrl = `${origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  // No query params — return path is in auth_redirect cookie (see lib/utils/oauth-callback.ts)
+  const callbackUrl = getOAuthCallbackUrl(origin);
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      '[auth/login] OAuth redirectTo (add to Supabase Auth → Redirect URLs if missing):',
+      callbackUrl
+    );
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -47,15 +48,13 @@ export async function GET(request: Request) {
 
   if (data.url) {
     const response = NextResponse.redirect(data.url);
-    if (isValidRedirect(redirectParam)) {
-      response.cookies.set('auth_redirect', redirectParam, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 10,
-        path: '/',
-      });
-    }
+    response.cookies.set('auth_redirect', nextPath, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 10,
+      path: '/',
+    });
     return response;
   }
 

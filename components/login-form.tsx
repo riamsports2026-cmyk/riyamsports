@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { peekAuthRedirect, saveAuthRedirect } from '@/lib/utils/auth-redirect';
 
 interface LoginFormProps {
   error?: string;
@@ -40,7 +42,19 @@ function GoogleButton({ redirect }: { redirect?: string }) {
   );
 }
 
-export function LoginForm({ error: urlError, redirect }: LoginFormProps) {
+export function LoginForm({ error: urlError, redirect: urlRedirect }: LoginFormProps) {
+  const [redirect, setRedirect] = useState(urlRedirect);
+
+  useEffect(() => {
+    if (urlRedirect?.startsWith('/')) {
+      saveAuthRedirect(urlRedirect);
+      setRedirect(urlRedirect);
+      return;
+    }
+    const stored = peekAuthRedirect();
+    if (stored) setRedirect(stored);
+  }, [urlRedirect]);
+
   const error = urlError;
   const isOAuthError = 
     error?.includes('not enabled') || 

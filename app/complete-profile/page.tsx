@@ -2,14 +2,21 @@ import { getProfile } from '@/lib/actions/profile';
 import { Metadata } from 'next';
 import { CompleteProfileForm } from '@/components/complete-profile-form';
 import { ParticleBackground } from '@/components/ui/particle-background';
+import { safeRedirectPath } from '@/lib/utils/public-routes';
 
 export const metadata: Metadata = {
   title: 'Complete Profile | RIAM Sports',
   description: 'Complete your profile to continue',
 };
 
-export default async function CompleteProfilePage() {
+export default async function CompleteProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>;
+}) {
   const profile = await getProfile();
+  const params = await searchParams;
+  const redirect = safeRedirectPath(params.redirect) ?? undefined;
 
   return (
     <div className="min-h-screen flex items-center justify-center relative py-8 sm:py-12 px-4 overflow-hidden">
@@ -32,7 +39,7 @@ export default async function CompleteProfilePage() {
             </h1>
             <p className="mt-1.5 text-[#1E3A5F]/70 text-sm sm:text-base">We need a few details to get started</p>
           </div>
-          <CompleteProfileForm profile={profile} />
+          <CompleteProfileForm profile={profile} redirect={redirect} />
         </div>
       </div>
     </div>

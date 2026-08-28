@@ -1,12 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
-
-function safeRedirectPath(path: string | null): string | null {
-  if (!path || typeof path !== 'string') return null;
-  const trimmed = path.trim();
-  return trimmed.startsWith('/') && !trimmed.startsWith('//') ? trimmed : null;
-}
+import {
+  parseAuthRedirectCookie,
+  resolvePostLoginRedirect,
+} from '@/lib/utils/auth-redirect';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -83,15 +81,19 @@ export async function GET(request: Request) {
 
     const profile = profileData as { mobile_number: string | null } | null;
 
-    // Redirect: next query param (most reliable) > auth_redirect cookie > /book
-    const nextParam = safeRedirectPath(requestUrl.searchParams.get('next'));
-    const redirectCookie = request.headers.get('cookie')?.split(';').find((c) => c.trim().startsWith('auth_redirect='));
-    const cookiePath = redirectCookie?.split('=')[1]?.trim();
-    const redirectPath = nextParam ?? safeRedirectPath(cookiePath ?? null);
+    // Redirect: prefer specific booking page over generic /book
+    const redirectPath = resolvePostLoginRedirect(
+      requestUrl.searchParams.get('next'),
+      parseAuthRedirectCookie(request.headers.get('cookie'))
+    );
 
     let destination: string;
     if (!profile || !profile.mobile_number) {
-      destination = `${origin}/complete-profile`;
+      const completeProfileUrl = new URL('/complete-profile', origin);
+      if (redirectPath) {
+        completeProfileUrl.searchParams.set('redirect', redirectPath);
+      }
+      destination = completeProfileUrl.toString();
     } else if (userIsAdminOrSubAdmin) {
       destination = `${origin}/admin`;
     } else {

@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import type { SerializeOptions } from 'cookie';
 import type { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import type { Database } from '@/lib/types/database';
@@ -6,13 +7,12 @@ import type { Database } from '@/lib/types/database';
 export type RouteHandlerCookie = {
   name: string;
   value: string;
-  options?: Record<string, unknown>;
+  options?: SerializeOptions;
 };
 
 /**
- * Supabase client for Route Handlers (OAuth login/callback).
+ * Supabase client for Route Handlers (OAuth callback).
  * Collects cookies from setAll so they can be applied to redirect responses.
- * Required for PKCE — without this, "code verifier not found" errors occur in production.
  */
 export function createRouteHandlerClient(
   request: NextRequest,
@@ -39,6 +39,17 @@ export function applyCookiesToResponse(
   cookiesToSet: RouteHandlerCookie[]
 ): void {
   cookiesToSet.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options);
+    if (!options) {
+      response.cookies.set(name, value);
+      return;
+    }
+    response.cookies.set(name, value, {
+      path: options.path ?? '/',
+      maxAge: options.maxAge,
+      expires: options.expires,
+      httpOnly: options.httpOnly,
+      secure: options.secure,
+      sameSite: options.sameSite as 'lax' | 'strict' | 'none' | undefined,
+    });
   });
 }

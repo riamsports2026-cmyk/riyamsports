@@ -19,11 +19,6 @@ import {
   isStaffRoute,
   safeRedirectPath,
 } from '@/lib/utils/public-routes';
-import {
-  isDeepBookPath,
-  parseAuthRedirectCookie,
-  resolvePostLoginRedirect,
-} from '@/lib/utils/auth-redirect';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,11 +26,15 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set('x-pathname', pathname);
 
   // OAuth routes must never call getUser() — it can clear PKCE verifier cookies
-  // and breaks Google sign-in in normal browser tabs (works in incognito with no stale cookies).
   if (
-    pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/api/auth/callback')
+    pathname.startsWith('/api/auth/callback') ||
+    pathname.startsWith('/api/auth/prepare-redirect')
   ) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  // Legacy server OAuth login — skip session refresh (prefer client-side GoogleSignInButton)
+  if (pathname.startsWith('/api/auth/login')) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -50,18 +49,10 @@ export async function proxy(request: NextRequest) {
 
     // OAuth code landed on wrong page — forward to callback BEFORE any session refresh
     const oauthCode = request.nextUrl.searchParams.get('code');
-    if (oauthCode) {
-      const callbackUrl = new URL('/api/auth/callback', request.url);
-      callbackUrl.searchParams.set('code', oauthCode);
-      const resolvedNext = resolvePostLoginRedirect(
-        request.nextUrl.searchParams.get('next'),
-        parseAuthRedirectCookie(request.headers.get('cookie') ?? null),
-        isDeepBookPath(pathname) ? pathname : null
-      );
-      if (resolvedNext) {
-        callbackUrl.searchParams.set('next', resolvedNext);
-      }
-      return NextResponse.redirect(callbackUrl);
+    if (oauthCode && !pathname.startsWith('/api/auth/callback')) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = '/api/auth/callback';
+      return NextResponse.rewrite(rewriteUrl);
     }
 
     const supabase = createServerClient(

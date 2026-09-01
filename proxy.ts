@@ -19,6 +19,14 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', pathname);
 
+  // Never refresh session on OAuth routes — getUser() can clear PKCE verifier cookies
+  if (
+    pathname.startsWith('/api/auth/callback') ||
+    pathname.startsWith('/api/auth/login')
+  ) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   let response = NextResponse.next({
     request: { headers: requestHeaders },
   });

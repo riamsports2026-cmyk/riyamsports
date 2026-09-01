@@ -1,14 +1,14 @@
-import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  applyCookiesToResponse,
+  createRouteHandlerClient,
+  type RouteHandlerCookie,
+} from '@/lib/supabase/route-handler';
 
 /**
- * Start OAuth flow from a Route Handler so the PKCE code verifier is stored
- * in cookies on the redirect response. Starting from a server action can
- * miss those cookies and cause "PKCE code verifier not found" on callback.
- *
- * Uses the request origin for redirectTo so the callback goes to the same
- * host the user is on (e.g. https://riyamsports.vercel.app on Vercel),
- * instead of relying on NEXT_PUBLIC_APP_URL which may be unset or localhost.
+ * Start OAuth from a route handler and attach PKCE verifier cookies to the
+ * redirect response. Using createClient() + cookies() alone drops those cookies
+ * on the Google redirect, causing "PKCE code verifier not found" on repeat logins.
  */
 function isValidRedirect(path: string | null): path is string {
   if (!path || typeof path !== 'string') return false;
@@ -16,7 +16,7 @@ function isValidRedirect(path: string | null): path is string {
   return trimmed.startsWith('/') && !trimmed.startsWith('//');
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
   const { searchParams } = requestUrl;
@@ -30,9 +30,14 @@ export async function GET(request: Request) {
   }
 
   const nextPath = isValidRedirect(redirectParam) ? redirectParam : '/book';
-  // Supabase allow-list matches this exact URL; store return path in auth_redirect cookie
   const callbackUrl = `${origin}/api/auth/callback`;
-  const supabase = await createClient();
+
+  const cookiesToSet: RouteHandlerCookie[] = [];
+  const supabase = createRouteHandlerClient(request, cookiesToSet);
+
+  // Clear stale PKCE/session cookies from prior OAuth attempts (e.g. after logout)
+  await supabase.auth.signOut({ scope: 'local' });
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -48,6 +53,7 @@ export async function GET(request: Request) {
 
   if (data.url) {
     const response = NextResponse.redirect(data.url);
+    applyCookiesToResponse(response, cookiesToSet);
     response.cookies.set('auth_redirect', nextPath, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

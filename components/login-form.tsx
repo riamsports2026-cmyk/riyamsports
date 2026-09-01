@@ -17,6 +17,16 @@ function GoogleButton({ redirect }: { redirect?: string }) {
   return (
     <a
       href={`/api/auth/login?${qs.toString()}`}
+      onClick={(e) => {
+        const target = e.currentTarget;
+        if (target.dataset.clicked === 'true') {
+          e.preventDefault();
+          return;
+        }
+        target.dataset.clicked = 'true';
+        target.style.pointerEvents = 'none';
+        target.style.opacity = '0.7';
+      }}
       className="w-full flex justify-center items-center gap-2 sm:gap-3 py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl text-sm sm:text-base font-semibold text-white bg-linear-to-r from-[#FF6B35] to-[#FF8C61] hover:from-[#E55A2B] hover:to-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/25 transition-all duration-200 hover:shadow-lg hover:shadow-[#FF6B35]/20 hover:-translate-y-0.5 cursor-pointer"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">

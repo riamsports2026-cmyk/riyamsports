@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { signOut } from '@/lib/actions/auth';
 import Link from 'next/link';
 import { getProfile } from '@/lib/actions/profile';
 import { isAdmin, isStaff } from '@/lib/utils/roles';
@@ -7,6 +6,7 @@ import { hasPermission } from '@/lib/utils/permissions';
 import { headers } from 'next/headers';
 import { MobileMenu } from '@/components/mobile-menu';
 import { DesktopNavLinks } from '@/components/desktop-nav-links';
+import { SignOutForm } from '@/components/sign-out-form';
 
 export async function Navigation() {
   try {
@@ -69,14 +69,14 @@ export async function Navigation() {
                       profile={profile}
                       userEmail={user?.email}
                     />
-                    <form action={signOut}>
+                    <SignOutForm>
                       <button
                         type="submit"
                         className="text-[#1E3A5F] hover:text-[#FF6B35] px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-[#FF6B35]/10 cursor-pointer"
                       >
                         Sign Out
                       </button>
-                    </form>
+                    </SignOutForm>
                   </div>
                 </>
               ) : (

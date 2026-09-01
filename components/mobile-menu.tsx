@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from '@/lib/actions/auth';
+import { SignOutForm } from '@/components/sign-out-form';
 import { SafeImage } from '@/components/ui/safe-image';
 
 interface MobileMenuProps {
@@ -164,7 +164,7 @@ export function MobileMenu({
 
           {/* Footer - Sign Out */}
           <div className="border-t border-gray-200 p-4">
-            <form action={signOut}>
+            <SignOutForm>
               <button
                 type="submit"
                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-linear-to-r from-[#FF6B35] to-[#FF8C61] text-white rounded-lg font-semibold hover:from-[#E55A2B] hover:to-[#FF6B35] transition-all shadow-lg cursor-pointer"
@@ -172,7 +172,7 @@ export function MobileMenu({
                 <span>🚪</span>
                 <span>Sign Out</span>
               </button>
-            </form>
+            </SignOutForm>
           </div>
         </div>
       </div>

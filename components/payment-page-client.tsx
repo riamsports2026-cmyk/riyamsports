@@ -1,8 +1,10 @@
 'use client';
 
 import { BookingWithDetails } from '@/lib/types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
+import Link from 'next/link';
+import { terminateBookingContinuation } from '@/lib/utils/booking-draft';
 
 interface PaymentPageClientProps {
   booking: BookingWithDetails;
@@ -26,6 +28,10 @@ export function PaymentPageClient({
   const [processing, setProcessing] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    terminateBookingContinuation('payment_page');
+  }, []);
 
   // Check if the active gateway is enabled
   const isActiveGatewayEnabled = 
@@ -97,6 +103,9 @@ export function PaymentPageClient({
         razorpay.on('payment.failed', function (response: any) {
           setError('Payment failed. Please try again.');
           setProcessing(false);
+        });
+        razorpay.on('modal.closed', function () {
+          terminateBookingContinuation('payment_cancelled');
         });
         razorpay.open();
         setProcessing(false);
@@ -194,12 +203,13 @@ export function PaymentPageClient({
                 {processing ? 'Processing...' : `Pay ₹${paymentAmount.toLocaleString()}`}
               </button>
 
-              {/* <a
-                href={`/bookings/${booking.id}`}
-                className="block text-center text-sm text-gray-600 hover:text-gray-900"
+              <Link
+                href="/book"
+                onClick={() => terminateBookingContinuation('payment_abandoned')}
+                className="block text-center text-sm text-gray-600 hover:text-gray-900 mt-4"
               >
-                Skip payment for now
-              </a> */}
+                Cancel and return to booking
+              </Link>
             </div>
           </div>
         </div>

@@ -11,10 +11,14 @@ import { calculateTotalAmount, calculateAdvanceAmount, calculateFullPaymentDisco
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { Loader } from '@/components/ui/loader';
 import {
-  clearBookingDraft,
-  clearResumeFlag,
+  createPendingAuthDraft,
+  isActiveContinuation,
   loadBookingDraft,
-  saveBookingDraft,
+  markContinuationPendingResume,
+  markResumeAttempted,
+  shouldAutoResumeBooking,
+  shouldRestoreBookingSelections,
+  terminateBookingContinuation,
 } from '@/lib/utils/booking-draft';
 import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
 
@@ -79,7 +83,7 @@ export function BookingForm({
 
   useEffect(() => {
     if (state?.success) {
-      clearBookingDraft();
+      terminateBookingContinuation('booking_created');
       router.push(`/bookings/${state.bookingId}/payment`);
     }
   }, [state, router]);
@@ -88,8 +92,16 @@ export function BookingForm({
   useEffect(() => {
     if (!isAuthenticated || resumeStarted.current) return;
 
+    const initialDraft = loadBookingDraft();
+    if (!initialDraft || initialDraft.turfId !== turf.id) return;
+    if (!isActiveContinuation(initialDraft)) return;
+
+    if (initialDraft.status === 'pending_auth') {
+      markContinuationPendingResume();
+    }
+
     const draft = loadBookingDraft();
-    if (!draft || draft.turfId !== turf.id) return;
+    if (!draft || !shouldRestoreBookingSelections(draft)) return;
 
     resumeStarted.current = true;
 
@@ -112,7 +124,7 @@ export function BookingForm({
           setResumeError(
             'Your selected time slots are no longer available. Please choose another slot.'
           );
-          clearBookingDraft();
+          terminateBookingContinuation('slots_unavailable');
           return;
         }
 
@@ -124,8 +136,8 @@ export function BookingForm({
 
         setSelectedHours(validHours);
 
-        if (draft!.resumeAfterLogin && validHours.length > 0) {
-          clearResumeFlag();
+        if (shouldAutoResumeBooking(loadBookingDraft())) {
+          markResumeAttempted();
           const formData = new FormData();
           formData.set('turf_id', turf.id);
           formData.set('booking_date', draft!.bookingDate);
@@ -134,7 +146,7 @@ export function BookingForm({
 
           const result = await createBooking(null, formData);
           if (result?.success && result.bookingId) {
-            clearBookingDraft();
+            terminateBookingContinuation('booking_created');
             router.push(`/bookings/${result.bookingId}/payment`);
             return;
           }
@@ -185,12 +197,11 @@ export function BookingForm({
     e.preventDefault();
     if (selectedHours.length === 0 || !paymentType) return;
 
-    saveBookingDraft({
+    createPendingAuthDraft({
       turfId: turf.id,
       bookingDate: selectedDate,
       selectedHours,
       paymentType,
-      resumeAfterLogin: true,
       returnPath: bookingPath,
     });
     saveAuthRedirect(bookingPath);

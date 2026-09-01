@@ -63,3 +63,8 @@ export function consumeAuthRedirect(): string | null {
   }
   return path;
 }
+
+export function clearAuthRedirect(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(AUTH_REDIRECT_STORAGE_KEY);
+}

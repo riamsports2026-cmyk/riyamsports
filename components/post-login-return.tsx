@@ -2,12 +2,16 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { loadBookingDraft } from '@/lib/utils/booking-draft';
-import { isDeepBookPath, peekAuthRedirect } from '@/lib/utils/auth-redirect';
+import {
+  loadBookingDraft,
+  markContinuationPendingResume,
+  shouldRedirectAfterAuth,
+} from '@/lib/utils/booking-draft';
+import { consumeAuthRedirect, isDeepBookPath } from '@/lib/utils/auth-redirect';
 
 /**
  * After OAuth, the server may land on /book instead of /book/location/service.
- * sessionStorage + booking draft hold the deep path — redirect client-side.
+ * Only redirect when an active pending_auth continuation exists — never stale drafts.
  */
 export function PostLoginReturn() {
   const router = useRouter();
@@ -17,15 +21,17 @@ export function PostLoginReturn() {
     if (pathname !== '/book' && pathname !== '/') return;
 
     const draft = loadBookingDraft();
-    const storedRedirect = peekAuthRedirect();
+    if (!shouldRedirectAfterAuth(draft)) return;
 
+    const storedRedirect = consumeAuthRedirect();
     const target =
-      (draft?.returnPath && isDeepBookPath(draft.returnPath)
-        ? draft.returnPath
+      (draft!.returnPath && isDeepBookPath(draft!.returnPath)
+        ? draft!.returnPath
         : null) ||
       (isDeepBookPath(storedRedirect) ? storedRedirect : null);
 
     if (target) {
+      markContinuationPendingResume();
       router.replace(target);
     }
   }, [pathname, router]);

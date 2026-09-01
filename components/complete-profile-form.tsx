@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 // import { ImageUpload } from '@/components/ui/image-upload';
 
 import { safeRedirectPath } from '@/lib/utils/auth-redirect';
+import { getActiveContinuationReturnPath } from '@/lib/utils/booking-draft';
 
 interface CompleteProfileFormProps {
   profile: Profile | null;
@@ -58,7 +59,11 @@ export function CompleteProfileForm({ profile, redirect }: CompleteProfileFormPr
       if (isAdminOrSubAdmin) {
         router.push('/admin');
       } else {
-        router.push(safeRedirectPath(redirect) || '/book');
+        const destination =
+          safeRedirectPath(redirect) ||
+          getActiveContinuationReturnPath() ||
+          '/book';
+        router.push(destination);
       }
     }
   }, [state, router, isAdminOrSubAdmin, redirect]);

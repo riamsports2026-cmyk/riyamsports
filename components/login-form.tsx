@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { saveAuthRedirect } from '@/lib/utils/auth-redirect';
+import { terminateBookingContinuation } from '@/lib/utils/booking-draft';
 
 interface LoginFormProps {
   error?: string;
@@ -57,8 +58,10 @@ export function LoginForm({ error: urlError, redirect }: LoginFormProps) {
   const isBookingLogin = redirect?.startsWith('/book');
 
   useEffect(() => {
-    if (redirect?.startsWith('/')) {
+    if (redirect?.startsWith('/book/')) {
       saveAuthRedirect(redirect);
+    } else {
+      terminateBookingContinuation('login_without_booking');
     }
   }, [redirect]);
 

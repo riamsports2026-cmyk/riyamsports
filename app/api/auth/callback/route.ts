@@ -55,29 +55,18 @@ export async function GET(request: NextRequest) {
   const { isAdminOrSubAdmin } = await import('@/lib/utils/roles');
   const userIsAdminOrSubAdmin = await isAdminOrSubAdmin(user.id);
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('mobile_number')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const profile = profileData as { mobile_number: string | null } | null;
-
   const redirectPath = resolvePostLoginRedirect(
     requestUrl.searchParams.get('next'),
     parseAuthRedirectCookie(request.headers.get('cookie'))
   );
 
   let destination: string;
-  if (!profile || !profile.mobile_number) {
-    const completeProfileUrl = new URL('/complete-profile', origin);
-    if (redirectPath) {
-      completeProfileUrl.searchParams.set('redirect', redirectPath);
-    }
-    destination = completeProfileUrl.toString();
-  } else if (userIsAdminOrSubAdmin) {
+  if (userIsAdminOrSubAdmin) {
     destination = `${origin}/admin`;
   } else {
+    // Land on home (/book) or the pending-booking deep path. Proxy handles
+    // complete-profile once the session cookie is present — sending users
+    // directly to /complete-profile here races session setup and bounces to /login.
     destination = `${origin}${redirectPath || '/book'}`;
   }
 
